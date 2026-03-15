@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+// MalaysiaMap — SVG peninsula map with animated supply chain routes
 
 // ── Simplified peninsular Malaysia SVG outline ──────────────────
 // Stylized, recognizable shape — not cartographically precise.
@@ -27,33 +27,25 @@ const PENINSULA_PATH =
 const PENANG_ISLAND =
   "M 88 62 C 85 58, 80 56, 78 60 C 76 65, 78 72, 82 75 C 86 78, 90 76, 92 72 C 94 67, 92 63, 88 62 Z";
 
-// ── Supply chain nodes ──────────────────────────────────────────
+// ── Supply chain nodes (north-up: Penang top-left, KL bottom-right) ─
 const NODES = [
-  { id: "farm",        x: 85,  y: 68,  emoji: "🌾", label: "PENANG FARM",    color: "#A855F7", sub: "Balik Pulau" },
-  { id: "factory",     x: 140, y: 145, emoji: "🏭", label: "IPOH FACTORY",   color: "#3B82F6", sub: "Kinta Valley" },
-  { id: "distributor", x: 255, y: 285, emoji: "🚛", label: "SHAH ALAM HUB",  color: "#F59E0B", sub: "Selangor" },
-  { id: "retailer",    x: 270, y: 310, emoji: "🏪", label: "BANGSAR KL",     color: "#10B981", sub: "Kuala Lumpur" },
+  { id: "farm",        x: 95,  y: 55,  emoji: "🌾", label: "PENANG FARM",    color: "#A855F7", sub: "Balik Pulau" },
+  { id: "factory",     x: 125, y: 140, emoji: "🏭", label: "IPOH FACTORY",   color: "#3B82F6", sub: "Kinta Valley" },
+  { id: "distributor", x: 235, y: 295, emoji: "🚛", label: "SHAH ALAM HUB",  color: "#F59E0B", sub: "Selangor" },
+  { id: "retailer",    x: 250, y: 330, emoji: "🏪", label: "BANGSAR KL",     color: "#10B981", sub: "Kuala Lumpur" },
 ];
 
-// ── Route segments (SVG polyline points) ────────────────────────
+// ── Route segments: north → south flow ──────────────────────────
 const ROUTES = [
-  { from: 0, to: 1, path: "M 85 68 C 100 95, 115 120, 140 145" },
-  { from: 1, to: 2, path: "M 140 145 C 170 185, 220 240, 255 285" },
-  { from: 2, to: 3, path: "M 255 285 C 260 293, 265 300, 270 310" },
+  { from: 0, to: 1, path: "M 95 55 C 105 85, 115 115, 125 140" },
+  { from: 1, to: 2, path: "M 125 140 C 155 190, 195 250, 235 295" },
+  { from: 2, to: 3, path: "M 235 295 C 240 308, 245 320, 250 330" },
 ];
 
 export default function MalaysiaMap({ height = 300 }) {
-  const svgRef = useRef(null);
-
-  // Animate truck dots along paths
-  useEffect(() => {
-    // Trucks are animated via CSS — no JS needed
-  }, []);
-
   return (
     <div style={{ width: "100%", height, position: "relative" }}>
       <svg
-        ref={svgRef}
         viewBox="30 0 310 400"
         style={{ width: "100%", height: "100%" }}
         preserveAspectRatio="xMidYMid meet"
@@ -196,9 +188,9 @@ export default function MalaysiaMap({ height = 300 }) {
         ))}
 
         {/* ── Lead time labels on route segments ─────────── */}
-        <text x="105" y="100" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">3 WEEKS</text>
-        <text x="195" y="220" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">2 WEEKS</text>
-        <text x="268" y="296" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">1 WEEK</text>
+        <text x="118" y="95" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">3 WEEKS</text>
+        <text x="185" y="220" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">2 WEEKS</text>
+        <text x="252" y="310" fill="#F59E0B" fontSize="7" fontFamily="monospace" fontWeight="700" opacity="0.7" textAnchor="middle">1 WEEK</text>
       </svg>
 
       {/* ── CSS Animations ───────────────────────────────── */}

@@ -28,12 +28,8 @@ export default function PlayerScreen() {
   const [loading, setLoading] = useState(true);
 
   // Player state: null = not registered, object = registered
-  const [player, setPlayer] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem("dr_player");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
+  const [player, setPlayer] = useState(null);
+  const [playerChecked, setPlayerChecked] = useState(false);
 
   // Form state
   const [name, setName] = useState("");
@@ -61,6 +57,32 @@ export default function PlayerScreen() {
   // Player count + mini-leaderboard data
   const [playerCount, setPlayerCount] = useState(0);
   const [topPlayers, setTopPlayers] = useState([]);
+
+  // On mount: restore player from sessionStorage, then verify against Firebase
+  useEffect(() => {
+    let cancelled = false;
+    const saved = (() => { try { const s = sessionStorage.getItem("dr_player"); return s ? JSON.parse(s) : null; } catch { return null; } })();
+    if (!saved) { setPlayerChecked(true); return; }
+    // Check if this uid still exists in Firebase
+    const unsub = onValue(ref(db, `players/${saved.uid}`), (snap) => {
+      if (cancelled) return;
+      if (snap.exists()) {
+        setPlayer(saved);
+      } else {
+        // Player record gone (game was reset) — clear stale session
+        sessionStorage.removeItem("dr_player");
+        setPlayer(null);
+      }
+      setPlayerChecked(true);
+      unsub(); // one-shot read
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const clearPlayer = () => {
+    sessionStorage.removeItem("dr_player");
+    setPlayer(null);
+  };
 
   useEffect(() => {
     const unsub = onValue(ref(db, "game/phase"), (snap) => {
@@ -257,7 +279,7 @@ export default function PlayerScreen() {
     }
   };
 
-  if (loading) {
+  if (loading || !playerChecked) {
     return (
       <div style={S.container}>
         <div style={S.spinner}>⏳</div>
@@ -374,6 +396,14 @@ export default function PlayerScreen() {
             }}>
               🎮 {playerCount} players ready
             </div>
+            <button onClick={clearPlayer} style={{
+              background: "none", border: "none", color: "#666",
+              fontSize: 14, fontFamily: "monospace", cursor: "pointer",
+              marginTop: 20, textDecoration: "underline",
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            }}>
+              Not you? Tap here to re-register
+            </button>
           </div>
           <div style={S.footerAbsolute}>Powered by TetriXX</div>
           <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
@@ -649,6 +679,26 @@ export default function PlayerScreen() {
     );
   }
 
+  // ── Round 1 results (locked leaderboard on admin) ─────────────
+  if (phase === "round1_results") {
+    const myCost = simulatePlayerCost(myDecisions);
+    return (
+      <div style={S.container}>
+        <div style={{ fontSize: 64, marginBottom: 12 }}>🏁</div>
+        <h1 style={{ fontSize: 36, fontWeight: 900, color: "#10B981", margin: "0 0 8px" }}>ROUND 1 COMPLETE!</h1>
+        <div style={{ ...S.card, borderColor: "#10B98144", textAlign: "center" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 14, color: "#10B981", letterSpacing: 3, marginBottom: 8 }}>YOUR TOTAL COST</div>
+          <div style={{ fontFamily: "monospace", fontSize: 48, fontWeight: 900, color: "#F59E0B" }}>
+            ${myCost.toFixed(0)}
+          </div>
+        </div>
+        <p style={{ fontSize: 20, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
+          Watch the big screen for results!
+        </p>
+      </div>
+    );
+  }
+
   // ── Durry intro ────────────────────────────────────────────────
   if (phase === "durry_intro") {
     return (
@@ -661,8 +711,8 @@ export default function PlayerScreen() {
     );
   }
 
-  // ── AI running (clean) ─────────────────────────────────────────
-  if (phase === "ai_running") {
+  // ── AI running (clean) + AI clean results ─────────────────────
+  if (phase === "ai_running" || phase === "ai_clean_results") {
     const myCost = simulatePlayerCost(myDecisions);
     return (
       <div style={S.container}>
@@ -712,8 +762,8 @@ export default function PlayerScreen() {
     );
   }
 
-  // ── AI dirty ───────────────────────────────────────────────────
-  if (phase === "ai_dirty") {
+  // ── AI dirty + AI dirty results ────────────────────────────────
+  if (phase === "ai_dirty" || phase === "ai_dirty_results") {
     const myCost = simulatePlayerCost(myDecisions);
     return (
       <div style={{ ...S.container, background: "#0a0000" }}>

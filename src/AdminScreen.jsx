@@ -17,7 +17,7 @@ import { Bar } from "react-chartjs-2";
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
-const PHASES = ["intro","lobby","round1","durry_intro","ai_running","gigo_reveal","ai_dirty","results"];
+const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results"];
 const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes total for round 1
 
 function writePhase(phase) { set(ref(db, "game/phase"), phase); }
@@ -342,6 +342,7 @@ export default function AdminScreen() {
   const [playersData, setPlayersData] = useState(null);
   const [prevWeeks, setPrevWeeks] = useState({}); // track week changes for flash
   const [flashUids, setFlashUids] = useState(new Set());
+  const [joinFeed, setJoinFeed] = useState([]); // recent player joins for lobby
   const aiTimer = useRef(null);
   const forceEndedRef = useRef(false);
 
@@ -361,6 +362,28 @@ export default function AdminScreen() {
     });
     return unsub;
   }, []);
+
+  // Track new player joins for lobby feed
+  const prevPlayerUids = useRef(new Set());
+  useEffect(() => {
+    if (!playersData) return;
+    const currentUids = new Set(Object.keys(playersData));
+    const newJoins = [];
+    for (const uid of currentUids) {
+      if (!prevPlayerUids.current.has(uid)) {
+        const p = playersData[uid];
+        const phone = p.phone || "";
+        const masked = phone.length > 4
+          ? phone.slice(0, phone.length - 4).replace(/./g, "•") + phone.slice(-4)
+          : phone;
+        newJoins.push({ uid, emoji: p.emoji || "👤", name: p.name || "???", phone: masked, ts: Date.now() });
+      }
+    }
+    if (newJoins.length > 0) {
+      setJoinFeed(prev => [...newJoins, ...prev].slice(0, 20));
+    }
+    prevPlayerUids.current = currentUids;
+  }, [playersData]);
 
   // Flash green when a player advances a week
   useEffect(() => {
@@ -425,7 +448,7 @@ export default function AdminScreen() {
     }
     setDeadline(null);
     writeDeadline(null);
-    setPhase("durry_intro");
+    setPhase("round1_results");
   }, [playersData, setPhase]);
 
   const reset = () => {
@@ -459,6 +482,7 @@ export default function AdminScreen() {
       if (w >= N_WEEKS) {
         setAiGoodGame(g); setSavedGood(g); setAiRunning(false);
         set(ref(db, "game/aiCleanCost"), retailerCost(g));
+        setPhase("ai_clean_results");
         return;
       }
       g = stepGame(g, 0, "ai_clean");
@@ -484,6 +508,7 @@ export default function AdminScreen() {
       if (w >= N_WEEKS) {
         setAiDirtyGame(g); setAiRunning(false);
         set(ref(db, "game/aiDirtyCost"), retailerCost(g));
+        setPhase("ai_dirty_results");
         return;
       }
       g = stepGame(g, 0, "ai_dirty");
@@ -717,10 +742,44 @@ export default function AdminScreen() {
                 {playerCount}
               </div>
               <div style={{
-                fontFamily: "monospace", fontSize: 15, color: "#aaa", letterSpacing: 4, marginBottom: 24, fontWeight: 700,
+                fontFamily: "monospace", fontSize: 15, color: "#aaa", letterSpacing: 4, marginBottom: 12, fontWeight: 700,
               }}>
                 PLAYERS JOINED
               </div>
+
+              {/* Live join feed */}
+              {joinFeed.length > 0 && (
+                <div style={{
+                  width: "100%", maxWidth: 340, maxHeight: 140, overflow: "hidden",
+                  marginBottom: 16, display: "flex", flexDirection: "column", gap: 4,
+                }}>
+                  {joinFeed.slice(0, 6).map((j, i) => {
+                    const ago = Math.max(0, Math.round((Date.now() - j.ts) / 1000));
+                    const agoStr = ago < 5 ? "just now" : ago < 60 ? `${ago}s ago` : `${Math.floor(ago / 60)}m ago`;
+                    return (
+                      <div key={j.uid} style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "4px 10px", borderRadius: 8,
+                        background: "rgba(16,185,129,0.08)",
+                        border: i === 0 ? "1px solid #10B98133" : "1px solid transparent",
+                        animation: i === 0 ? "slideIn 0.4s ease-out" : "none",
+                        opacity: 1 - i * 0.12,
+                      }}>
+                        <span style={{ fontSize: 18 }}>{j.emoji}</span>
+                        <span style={{
+                          flex: 1, fontFamily: "monospace", fontSize: 13, fontWeight: 700,
+                          color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {j.name}
+                        </span>
+                        <span style={{ fontFamily: "monospace", fontSize: 10, color: "#555" }}>{j.phone}</span>
+                        <span style={{ fontFamily: "monospace", fontSize: 10, color: "#10B981" }}>{agoStr}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <button onClick={() => {
                 set(ref(db, "game/locked"), true);
                 startRoundTimer();
@@ -745,6 +804,7 @@ export default function AdminScreen() {
             </div>
           </div>
         </div>
+        <style>{`@keyframes slideIn{0%{transform:translateY(-20px);opacity:0}100%{transform:translateY(0);opacity:1}}`}</style>
       </div>
     );
   }
@@ -974,6 +1034,127 @@ export default function AdminScreen() {
     );
   }
 
+  // ── ROUND 1 RESULTS — locked leaderboard ──────────────────────
+  if (phase === "round1_results") {
+    const lb = buildLeaderboard(playersData);
+
+    return (
+      <div style={{
+        minHeight: "100vh", background: "#050505", color: "#fff",
+        fontFamily: "system-ui, sans-serif",
+        display: "flex", flexDirection: "column",
+      }}>
+        {/* Top bar */}
+        <div style={{
+          background: "#0a0a0a", borderBottom: "2px solid #10B98133",
+          padding: "12px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{
+              background: "#10B981", color: "#000", borderRadius: 8,
+              padding: "6px 16px", fontFamily: "monospace", fontWeight: 900,
+              fontSize: "clamp(16px, 3vw, 24px)", letterSpacing: 2,
+            }}>
+              ROUND 1 RESULTS
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 14, color: "#10B981", fontWeight: 900 }}>
+              🏁 {playerCount} players · AVG ${avgPlayerCost.toFixed(0)}
+            </div>
+          </div>
+        </div>
+
+        {/* Leaderboard */}
+        <div style={{ flex: 1, padding: "16px 24px", overflow: "auto" }}>
+          <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "8px 12px", marginBottom: 4,
+              fontFamily: "monospace", fontSize: 10, color: "#555",
+              letterSpacing: 2, textTransform: "uppercase",
+            }}>
+              <div style={{ width: 40 }}>RANK</div>
+              <div style={{ width: 36 }}></div>
+              <div style={{ flex: 1 }}>PLAYER</div>
+              <div style={{ width: 100, textAlign: "center" }}>WEEKS</div>
+              <div style={{ width: 90, textAlign: "right" }}>TOTAL COST</div>
+            </div>
+
+            {lb.map((p, idx) => {
+              const isTop3 = idx < 3;
+              const rankColors = ["#F59E0B", "#C0C0C0", "#CD7F32"];
+              const rankIcons = ["🥇", "🥈", "🥉"];
+              return (
+                <div key={p.uid} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 12px", borderRadius: 10, marginBottom: 3,
+                  background: isTop3 ? `${rankColors[idx]}0a` : "transparent",
+                  borderLeft: isTop3 ? `4px solid ${rankColors[idx]}` : "4px solid transparent",
+                }}>
+                  <div style={{
+                    fontFamily: "monospace", fontSize: isTop3 ? 22 : 16,
+                    fontWeight: 900, width: 40, textAlign: "center",
+                    color: isTop3 ? rankColors[idx] : "#444",
+                  }}>
+                    {isTop3 ? rankIcons[idx] : `${idx + 1}`}
+                  </div>
+                  <div style={{ fontSize: 28, width: 36, textAlign: "center" }}>{p.emoji}</div>
+                  <div style={{
+                    flex: 1, fontWeight: 700,
+                    fontSize: isTop3 ? 18 : 15,
+                    color: isTop3 ? "#fff" : "#bbb",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {p.name}
+                  </div>
+                  <div style={{ width: 100, textAlign: "center" }}>
+                    {p.done ? (
+                      <span style={{
+                        background: "#10B98122", border: "1px solid #10B98144",
+                        color: "#10B981", borderRadius: 6, padding: "3px 12px",
+                        fontFamily: "monospace", fontWeight: 900, fontSize: 12,
+                      }}>✓ DONE</span>
+                    ) : (
+                      <span style={{ fontFamily: "monospace", fontSize: 12, color: "#888" }}>
+                        {p.currentWeek}/{N_WEEKS}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{
+                    width: 90, textAlign: "right",
+                    fontFamily: "monospace", fontWeight: 900,
+                    fontSize: isTop3 ? 18 : 15,
+                    color: isTop3 ? rankColors[idx] : "#666",
+                  }}>
+                    ${p.cost.toFixed(0)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{
+          background: "#0a0a0a", borderTop: "2px solid #10B98122",
+          padding: "12px 24px", textAlign: "center",
+        }}>
+          <button onClick={() => setPhase("durry_intro")} style={{
+            background: "linear-gradient(135deg, #F59E0B, #D97706)",
+            color: "#000", border: "none", borderRadius: 14,
+            padding: "16px 48px", fontSize: 18, fontWeight: 900,
+            cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
+            boxShadow: "0 0 30px #F59E0B44",
+          }}>
+            MEET DURRY →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── DURRY INTRO — cinematic boss reveal ────────────────────────
   if (phase === "durry_intro") {
     return (
@@ -989,15 +1170,13 @@ export default function AdminScreen() {
     );
   }
 
-  // ── AI RUNNING (CLEAN) — Fast playback → Strategy chart ────────
+  // ── AI RUNNING (CLEAN) — Fast playback ─────────────────────────
   if (phase === "ai_running") {
     const AG = aiGoodGame ?? newGame();
     const snaps = cleanSnaps.current;
     const currentSnap = snaps.length > 0 ? snaps[snaps.length - 1] : null;
 
-    // During playback: big flashing week card
-    if (aiRunning) {
-      return (
+    return (
         <div style={{
           minHeight: "100vh", background: "#050505", color: "#fff",
           fontFamily: "system-ui, sans-serif",
@@ -1035,9 +1214,13 @@ export default function AdminScreen() {
           <style>{`@keyframes weekPulse{0%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
         </div>
       );
-    }
+  }
 
-    // After playback: strategy chart
+  // ── AI CLEAN RESULTS — Strategy chart ─────────────────────────
+  if (phase === "ai_clean_results") {
+    const AG = aiGoodGame ?? newGame();
+    const snaps = cleanSnaps.current;
+
     const cleanWhys = [
       "Pipeline full — draining buffer",
       "Stable signal, coast on stock",
@@ -1247,16 +1430,14 @@ export default function AdminScreen() {
     );
   }
 
-  // ── AI DIRTY — Fast playback → Failure chart ──────────────────
+  // ── AI DIRTY — Fast playback ───────────────────────────────────
   if (phase === "ai_dirty") {
     const DG = aiDirtyGame ?? newGame();
     const dSnaps = dirtySnaps.current;
     const currentSnap = dSnaps.length > 0 ? dSnaps[dSnaps.length - 1] : null;
     const isErrorWeek = currentSnap && currentSnap.week >= 4 && currentSnap.week <= 6;
 
-    // During playback: fast flashing with red theme
-    if (aiRunning) {
-      return (
+    return (
         <div style={{
           minHeight: "100vh", background: "#050505", color: "#fff",
           fontFamily: "system-ui, sans-serif",
@@ -1315,9 +1496,13 @@ export default function AdminScreen() {
           `}</style>
         </div>
       );
-    }
+  }
 
-    // After playback: failure chart
+  // ── AI DIRTY RESULTS — Failure chart ──────────────────────────
+  if (phase === "ai_dirty_results") {
+    const DG = aiDirtyGame ?? newGame();
+    const dSnaps = dirtySnaps.current;
+
     const dirtyErrors = [
       "Phantom stock masks real depletion",
       "SAP says 23 — actual 8. Coasting blind",
