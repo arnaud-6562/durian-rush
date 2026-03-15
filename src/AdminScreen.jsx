@@ -396,44 +396,110 @@ export default function AdminScreen() {
     </div>
   );
 
-  // ── INTRO ──────────────────────────────────────────────────────
+  // ── INTRO — dramatic welcome with Durry vs Glitch ─────────────
   if (phase === "intro") {
     return (
       <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
         <PhaseBar />
         <div style={{
           display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", minHeight: "80vh",
-          padding: "30px 24px", textAlign: "center",
+          justifyContent: "center", minHeight: "90vh",
+          padding: "24px 24px 40px", textAlign: "center",
         }}>
+          {/* Title block */}
+          <h1 style={{
+            fontSize: "clamp(52px, 12vw, 80px)", fontWeight: 900, margin: "0 0 6px",
+            background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            lineHeight: 0.95, letterSpacing: -2,
+          }}>
+            DURIAN RUSH
+          </h1>
+          <div style={{ fontFamily: "monospace", fontSize: 24, color: "#fff", letterSpacing: 3, margin: "8px 0 6px", fontWeight: 700 }}>
+            THE SUPPLY CHAIN CHALLENGE
+          </div>
           <div style={{
             background: "#F59E0B22", border: "1px solid #F59E0B66",
             color: "#F59E0B", borderRadius: 30, padding: "5px 18px",
-            fontFamily: "monospace", fontSize: 10, letterSpacing: 3, marginBottom: 20,
+            fontFamily: "monospace", fontSize: 11, letterSpacing: 3, marginBottom: 36,
+            textTransform: "uppercase",
           }}>
-            🏆 CARGONOW 2025 · KUALA LUMPUR
+            CARGONOW 2025 · KUALA LUMPUR
           </div>
-          <h1 style={{
-            fontSize: "clamp(52px, 14vw, 100px)", fontWeight: 900, margin: "0 0 4px",
-            background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            lineHeight: 0.9, letterSpacing: -2,
-          }}>
-            DURIAN<br/>RUSH
-          </h1>
-          <div style={{ fontFamily: "monospace", fontSize: 13, color: "#888", letterSpacing: 2, margin: "14px 0 32px" }}>
-            THE SUPPLY CHAIN CHALLENGE
+
+          {/* Character cards */}
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
+            {/* DURRY — clean AI */}
+            <div style={{
+              background: "#0a0a0a", border: "2px solid #F59E0B66",
+              borderRadius: 16, padding: "24px 28px", width: 240,
+              textAlign: "center", position: "relative",
+            }}>
+              <img src="/durry.png" alt="Durry" style={{ width: 150, height: 150, objectFit: "contain", marginBottom: 12 }} />
+              <div style={{
+                fontSize: 28, fontWeight: 900, letterSpacing: 4,
+                background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                marginBottom: 4,
+              }}>
+                DURRY
+              </div>
+              <div style={{ fontFamily: "monospace", fontSize: 13, color: "#888", letterSpacing: 2, marginBottom: 12 }}>
+                THE AI
+              </div>
+              <div style={{
+                background: "#10B98122", border: "1px solid #10B98166", color: "#10B981",
+                borderRadius: 20, padding: "4px 14px", display: "inline-block",
+                fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: 2,
+              }}>
+                CLEAN DATA MODE
+              </div>
+            </div>
+
+            {/* GLITCH — corrupted AI */}
+            <div style={{
+              background: "#0a0a0a", border: "2px solid #EF444466",
+              borderRadius: 16, padding: "24px 28px", width: 240,
+              textAlign: "center", position: "relative",
+              opacity: 0.7,
+            }}>
+              <img
+                src="/durry.png" alt="Glitch"
+                style={{
+                  width: 150, height: 150, objectFit: "contain", marginBottom: 12,
+                  filter: "hue-rotate(120deg) saturate(200%)",
+                }}
+              />
+              <div style={{
+                fontSize: 28, fontWeight: 900, letterSpacing: 4,
+                color: "#EF4444", marginBottom: 4,
+              }}>
+                GLITCH
+              </div>
+              <div style={{ fontFamily: "monospace", fontSize: 13, color: "#888", letterSpacing: 2, marginBottom: 12 }}>
+                THE AI
+              </div>
+              <div style={{
+                background: "#EF444422", border: "1px solid #EF444466", color: "#EF4444",
+                borderRadius: 20, padding: "4px 14px", display: "inline-block",
+                fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: 2,
+              }}>
+                CORRUPTED DATA MODE
+              </div>
+            </div>
           </div>
+
+          {/* Open lobby button */}
           <button onClick={() => setPhase("lobby")} style={{
             background: "linear-gradient(135deg, #F59E0B, #D97706)",
             color: "#000", border: "none", borderRadius: 14,
-            padding: "18px 48px", fontSize: 18, fontWeight: 900,
-            cursor: "pointer", letterSpacing: 2, fontFamily: "monospace",
+            padding: "18px 48px", fontSize: 20, fontWeight: 900,
+            cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
             boxShadow: "0 0 40px #F59E0B44, 0 4px 20px #00000088",
           }}>
-            🎮 OPEN LOBBY
+            OPEN LOBBY →
           </button>
-          <div style={{ marginTop: 16, color: "#2a2a2a", fontSize: 10, fontFamily: "monospace" }}>powered by TetriXX</div>
+          <div style={{ marginTop: 12, color: "#333", fontSize: 11, fontFamily: "monospace" }}>Presenter control</div>
         </div>
       </div>
     );
@@ -441,46 +507,70 @@ export default function AdminScreen() {
 
   // ── LOBBY ──────────────────────────────────────────────────────
   if (phase === "lobby") {
+    const PLAY_URL = "https://durian-rush-kl.web.app/play";
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(PLAY_URL)}&color=D97706&bgcolor=000000&format=png`;
     return (
-      <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
-        <PhaseBar />
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", minHeight: "80vh",
-          padding: "30px 24px", textAlign: "center",
-        }}>
-          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#F59E0B", letterSpacing: 4, marginBottom: 20 }}>
-            SCAN QR CODE TO JOIN
-          </div>
+      <div style={{
+        minHeight: "100vh", color: "#fff", fontFamily: "system-ui, sans-serif",
+        backgroundImage: "url(/can1.png)", backgroundSize: "cover", backgroundPosition: "center",
+        position: "relative",
+      }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 0 }} />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <PhaseBar />
           <div style={{
-            background: "#fff", padding: 24, borderRadius: 16, marginBottom: 24,
-            fontSize: 14, color: "#000", fontWeight: 700,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", minHeight: "85vh",
+            padding: "24px 24px", textAlign: "center",
           }}>
-            [ QR CODE → /play ]
+            <div style={{
+              fontFamily: "monospace", fontSize: 18, color: "#F59E0B", letterSpacing: 6,
+              fontWeight: 700, marginBottom: 20, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            }}>
+              SCAN QR CODE TO JOIN
+            </div>
+            <div style={{
+              background: "#000", padding: 16, borderRadius: 16, marginBottom: 16,
+              border: "3px solid #F59E0B66",
+              boxShadow: "0 0 40px #F59E0B22",
+            }}>
+              <img src={qrSrc} alt="QR Code" style={{ width: 300, height: 300, display: "block", borderRadius: 8 }} />
+            </div>
+            <div style={{
+              fontFamily: "monospace", fontSize: 16, color: "#F59E0B", letterSpacing: 2,
+              marginBottom: 28, fontWeight: 700,
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            }}>
+              durian-rush-kl.web.app/play
+            </div>
+            <div style={{
+              fontSize: "clamp(64px, 16vw, 120px)", fontWeight: 900,
+              color: "#10B981", fontFamily: "monospace", lineHeight: 1,
+              textShadow: "0 0 40px #10B98144",
+            }}>
+              {playerCount}
+            </div>
+            <div style={{
+              fontFamily: "monospace", fontSize: 16, color: "#aaa", letterSpacing: 4, marginBottom: 32,
+              fontWeight: 700,
+            }}>
+              PLAYERS JOINED
+            </div>
+            <button onClick={() => {
+              set(ref(db, "game/locked"), true);
+              writeWeek(0);
+              startWeekTimer();
+              setPhase("round1");
+            }} style={{
+              background: "linear-gradient(135deg, #10B981, #059669)",
+              color: "#000", border: "none", borderRadius: 14,
+              padding: "18px 48px", fontSize: 20, fontWeight: 900,
+              cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
+              boxShadow: "0 0 30px #10B98144",
+            }}>
+              🔒 LOCK & START ROUND 1
+            </button>
           </div>
-          <div style={{
-            fontSize: "clamp(48px, 12vw, 96px)", fontWeight: 900,
-            color: "#10B981", fontFamily: "monospace",
-          }}>
-            {playerCount}
-          </div>
-          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#555", letterSpacing: 4, marginBottom: 32 }}>
-            PLAYERS JOINED
-          </div>
-          <button onClick={() => {
-            set(ref(db, "game/locked"), true);
-            writeWeek(0);
-            startWeekTimer();
-            setPhase("round1");
-          }} style={{
-            background: "linear-gradient(135deg, #10B981, #059669)",
-            color: "#000", border: "none", borderRadius: 14,
-            padding: "18px 48px", fontSize: 18, fontWeight: 900,
-            cursor: "pointer", letterSpacing: 2, fontFamily: "monospace",
-            boxShadow: "0 0 30px #10B98144",
-          }}>
-            🔒 LOCK & START ROUND 1
-          </button>
         </div>
       </div>
     );

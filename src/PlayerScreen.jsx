@@ -248,13 +248,13 @@ export default function PlayerScreen() {
         <h1 style={S.title}>DURIAN RUSH</h1>
         <p style={S.subtitle}>THE SUPPLY CHAIN CHALLENGE</p>
         <div style={S.card}>
-          <div style={S.cardTitle}>GAME HASN'T STARTED YET</div>
-          <p style={S.cardBody}>
+          <div style={{ ...S.cardTitle, fontSize: 14 }}>GAME HASN'T STARTED YET</div>
+          <p style={{ ...S.cardBody, fontSize: 18 }}>
             Wait for the presenter to open the lobby.
             Keep this screen open.
           </p>
         </div>
-        <div style={S.footer}>powered by TetriXX</div>
+        <div style={{ ...S.footer, fontSize: 14 }}>powered by TetriXX</div>
       </div>
     );
   }
@@ -266,9 +266,9 @@ export default function PlayerScreen() {
         <div style={S.overlay} />
         <div style={S.centerContent}>
           <div style={S.glassCard}>
-            <div style={{ fontSize: 48, textAlign: "center", marginBottom: 8 }}>📱</div>
-            <div style={{ ...S.cardHeading, textAlign: "center" }}>CHECK YOUR PHONE</div>
-            <p style={{ color: "#aaa", fontSize: 13, textAlign: "center", margin: "8px 0 20px" }}>
+            <div style={{ fontSize: 56, textAlign: "center", marginBottom: 8 }}>📱</div>
+            <div style={{ ...S.cardHeading, textAlign: "center", fontSize: 28 }}>CHECK YOUR PHONE</div>
+            <p style={{ color: "#aaa", fontSize: 18, textAlign: "center", margin: "8px 0 20px", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
               Code sent to <strong style={{ color: "#F59E0B" }}>{formDataRef.current?.phone}</strong>
             </p>
             <input
@@ -327,21 +327,24 @@ export default function PlayerScreen() {
           <div style={S.centerContent}>
             <div style={{ fontSize: 80, marginBottom: 12 }}>{player.emoji}</div>
             <h1 style={{
-              fontSize: 32, fontWeight: 900, margin: "0 0 8px",
+              fontSize: 36, fontWeight: 900, margin: "0 0 8px",
               background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
             }}>
               {player.name.toUpperCase()}
             </h1>
             <div style={{
-              color: "#aaa", fontSize: 14, marginBottom: 24,
+              color: "#fff", fontSize: 20, marginBottom: 24, fontWeight: 700,
+              letterSpacing: 2, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
               animation: "pulse 2s ease-in-out infinite",
             }}>
               WAITING FOR THE GAME TO START...
             </div>
             <div style={{
-              background: "rgba(0,0,0,0.6)", borderRadius: 12, padding: "12px 24px",
-              fontFamily: "monospace", fontSize: 16, color: "#10B981", fontWeight: 700,
+              background: "rgba(0,0,0,0.6)", borderRadius: 12, padding: "14px 28px",
+              fontFamily: "monospace", fontSize: 22, color: "#10B981", fontWeight: 900,
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
             }}>
               🎮 {playerCount} players ready
             </div>
@@ -358,16 +361,18 @@ export default function PlayerScreen() {
         <div style={S.overlay} />
         <div style={S.centerContent}>
           <h1 style={{
-            fontSize: 40, fontWeight: 900, margin: "0 0 4px",
+            fontSize: 48, fontWeight: 900, margin: "0 0 4px",
             background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             textAlign: "center",
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
           }}>
             DURIAN RUSH
           </h1>
           <p style={{
-            color: "#fff", fontSize: 16, textAlign: "center",
+            color: "#fff", fontSize: 24, textAlign: "center", fontWeight: 700,
             margin: "0 0 24px", letterSpacing: 2,
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
           }}>
             THE SUPPLY CHAIN CHALLENGE
           </p>
@@ -567,10 +572,10 @@ export default function PlayerScreen() {
   if (phase === "durry_intro") {
     return (
       <div style={S.container}>
-        <div style={{ fontSize: 64, marginBottom: 12 }}>⚡</div>
-        <h1 style={{ ...S.title, color: "#10B981" }}>A NEW CHALLENGER</h1>
-        <p style={S.subtitle}>DURRY IS ENTERING THE ARENA</p>
-        <div style={S.footer}>Watch the big screen!</div>
+        <div style={{ fontSize: 80, marginBottom: 12 }}>⚡</div>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#10B981", margin: "0 0 8px", textShadow: "0 0 30px #10B98166" }}>A NEW CHALLENGER</h1>
+        <p style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 24, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>DURRY IS ENTERING THE ARENA</p>
+        <div style={{ fontSize: 20, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>Watch the big screen!</div>
       </div>
     );
   }
@@ -580,30 +585,30 @@ export default function PlayerScreen() {
     const myCost = simulatePlayerCost(myDecisions);
     return (
       <div style={S.container}>
-        <div style={{ fontSize: 48, marginBottom: 12, animation: "spin 2s linear infinite" }}>⚡</div>
-        <h1 style={{ ...S.title, color: "#10B981" }}>ROUND 2</h1>
-        <p style={S.subtitle}>DURRY IS PLAYING WITH CLEAN DATA</p>
+        <div style={{ fontSize: 64, marginBottom: 12, animation: "spin 2s linear infinite" }}>⚡</div>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#10B981", margin: "0 0 8px", textShadow: "0 0 30px #10B98166" }}>ROUND 2</h1>
+        <p style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 20, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>DURRY IS PLAYING WITH CLEAN DATA</p>
         <div style={{ ...S.card, borderColor: "#10B98144" }}>
-          <div style={{ ...S.cardTitle, color: "#10B981" }}>YOUR ROUND 1 COST</div>
-          <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#F59E0B", textAlign: "center" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 14, color: "#10B981", letterSpacing: 3, marginBottom: 8 }}>YOUR ROUND 1 COST</div>
+          <div style={{ fontFamily: "monospace", fontSize: 42, fontWeight: 900, color: "#F59E0B", textAlign: "center" }}>
             ${myCost.toFixed(0)}
           </div>
-          <p style={{ ...S.cardBody, textAlign: "center", marginTop: 8 }}>
+          <p style={{ fontSize: 18, color: "#aaa", textAlign: "center", marginTop: 8 }}>
             Can Durry beat your score?
           </p>
         </div>
         {aiCleanCost != null && (
           <div style={{ ...S.card, borderColor: "#10B98144" }}>
-            <div style={{ ...S.cardTitle, color: "#10B981" }}>DURRY'S COST (CLEAN DATA)</div>
-            <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#10B981", textAlign: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 14, color: "#10B981", letterSpacing: 3, marginBottom: 8 }}>DURRY'S COST (CLEAN DATA)</div>
+            <div style={{ fontFamily: "monospace", fontSize: 42, fontWeight: 900, color: "#10B981", textAlign: "center" }}>
               ${aiCleanCost.toFixed(0)}
             </div>
-            <p style={{ ...S.cardBody, textAlign: "center", marginTop: 8, color: "#10B981" }}>
+            <p style={{ fontSize: 18, color: "#10B981", textAlign: "center", marginTop: 8, fontWeight: 700 }}>
               {aiCleanCost < myCost ? `${((1 - aiCleanCost / myCost) * 100).toFixed(0)}% cheaper than you` : "You beat the AI!"}
             </p>
           </div>
         )}
-        <div style={S.footer}>Watch the big screen!</div>
+        <div style={{ fontSize: 20, color: "#fff", marginTop: 16, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>Watch the big screen!</div>
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes blink{50%{opacity:0}}`}</style>
       </div>
     );
@@ -613,15 +618,15 @@ export default function PlayerScreen() {
   if (phase === "gigo_reveal") {
     return (
       <div style={{ ...S.container, background: "#0a0000" }}>
-        <div style={{ fontSize: 64, marginBottom: 12 }}>☠️</div>
-        <h1 style={{ ...S.title, color: "#EF4444" }}>GARBAGE IN</h1>
-        <h1 style={{ ...S.title, color: "#EF4444", marginTop: -8 }}>GARBAGE OUT</h1>
+        <div style={{ fontSize: 80, marginBottom: 12 }}>☠️</div>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#EF4444", margin: "0 0 4px", textShadow: "0 0 30px #EF444466" }}>GARBAGE IN</h1>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#EF4444", margin: "0 0 16px", textShadow: "0 0 30px #EF444466" }}>GARBAGE OUT</h1>
         <div style={{ ...S.card, borderColor: "#EF444444" }}>
-          <p style={{ ...S.cardBody, color: "#EF4444" }}>
+          <p style={{ fontSize: 18, color: "#EF4444", margin: 0, lineHeight: 1.7 }}>
             The AI's data has been corrupted.
           </p>
         </div>
-        <div style={S.footer}>Watch the big screen…</div>
+        <div style={{ fontSize: 20, color: "#fff", marginTop: 16, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>Watch the big screen…</div>
       </div>
     );
   }
@@ -631,12 +636,12 @@ export default function PlayerScreen() {
     const myCost = simulatePlayerCost(myDecisions);
     return (
       <div style={{ ...S.container, background: "#0a0000" }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>☠️</div>
-        <h1 style={{ ...S.title, color: "#EF4444" }}>ROUND 3</h1>
-        <p style={S.subtitle}>AI WITH CORRUPT DATA</p>
+        <div style={{ fontSize: 64, marginBottom: 12 }}>☠️</div>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#EF4444", margin: "0 0 8px", textShadow: "0 0 30px #EF444466" }}>ROUND 3</h1>
+        <p style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 20, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>AI WITH CORRUPT DATA</p>
         <div style={{ ...S.card, borderColor: "#EF444444" }}>
-          <div style={{ ...S.cardTitle, color: "#EF4444" }}>SAP BUGS ACTIVE</div>
-          <p style={S.cardBody}>
+          <div style={{ fontFamily: "monospace", fontSize: 14, color: "#EF4444", letterSpacing: 3, marginBottom: 8 }}>SAP BUGS ACTIVE</div>
+          <p style={{ fontSize: 18, color: "#aaa", margin: 0, lineHeight: 1.7 }}>
             Phantom inventory. Wrong lead times. Stale demand.
             Same algorithm — different outcome.
           </p>
@@ -645,17 +650,17 @@ export default function PlayerScreen() {
           <div style={{ ...S.card, borderColor: "#EF444444" }}>
             <div style={{ display: "flex", justifyContent: "space-around", textAlign: "center" }}>
               <div>
-                <div style={{ fontSize: 10, color: "#555", fontFamily: "monospace", letterSpacing: 2 }}>YOU</div>
-                <div style={{ fontFamily: "monospace", fontSize: 24, fontWeight: 900, color: "#F59E0B" }}>${myCost.toFixed(0)}</div>
+                <div style={{ fontSize: 13, color: "#888", fontFamily: "monospace", letterSpacing: 2 }}>YOU</div>
+                <div style={{ fontFamily: "monospace", fontSize: 32, fontWeight: 900, color: "#F59E0B" }}>${myCost.toFixed(0)}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: "#555", fontFamily: "monospace", letterSpacing: 2 }}>DURRY (DIRTY)</div>
-                <div style={{ fontFamily: "monospace", fontSize: 24, fontWeight: 900, color: "#EF4444" }}>${aiDirtyCost.toFixed(0)}</div>
+                <div style={{ fontSize: 13, color: "#888", fontFamily: "monospace", letterSpacing: 2 }}>DURRY (DIRTY)</div>
+                <div style={{ fontFamily: "monospace", fontSize: 32, fontWeight: 900, color: "#EF4444" }}>${aiDirtyCost.toFixed(0)}</div>
               </div>
             </div>
           </div>
         )}
-        <div style={S.footer}>Watch the cost explode on screen</div>
+        <div style={{ fontSize: 20, color: "#fff", marginTop: 16, textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>Watch the cost explode on screen</div>
       </div>
     );
   }
@@ -673,9 +678,9 @@ export default function PlayerScreen() {
 
     return (
       <div style={S.container}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🏆</div>
-        <h1 style={{ ...S.title, color: "#F59E0B", fontSize: "clamp(24px, 8vw, 40px)" }}>GAME OVER</h1>
-        <p style={S.subtitle}>THREE ROUNDS. ONE LESSON.</p>
+        <div style={{ fontSize: 64, marginBottom: 8 }}>🏆</div>
+        <h1 style={{ fontSize: 48, fontWeight: 900, color: "#F59E0B", margin: "0 0 8px", textShadow: "0 0 20px #F59E0B44" }}>GAME OVER</h1>
+        <p style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 20 }}>THREE ROUNDS. ONE LESSON.</p>
 
         <div style={{ maxWidth: 360, width: "100%", display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
           {scores.map((s, idx) => {
@@ -691,7 +696,7 @@ export default function PlayerScreen() {
                 <div style={{ fontSize: 24 }}>{medals[idx]}</div>
                 <div style={{ fontSize: 24 }}>{s.icon}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14, color: isMe ? "#fff" : "#bbb" }}>
+                  <div style={{ fontWeight: 900, fontSize: 18, color: isMe ? "#fff" : "#bbb" }}>
                     {s.label}
                   </div>
                 </div>
@@ -707,19 +712,19 @@ export default function PlayerScreen() {
         </div>
 
         <div style={{ ...S.card, borderColor: "#F59E0B44" }}>
-          <p style={S.cardBody}>
+          <p style={{ fontSize: 18, color: "#aaa", margin: 0, lineHeight: 1.7 }}>
             AI doesn't fail because of bad models.
             It fails because of <strong style={{ color: "#EF4444" }}>bad data</strong>.
           </p>
-          <p style={{ ...S.cardBody, color: "#F59E0B", fontWeight: 700, marginTop: 12 }}>
+          <p style={{ fontSize: 20, color: "#F59E0B", fontWeight: 900, marginTop: 16, margin: "16px 0 0" }}>
             What data are you feeding your AI?
           </p>
         </div>
-        <div style={{ marginTop: 20, textAlign: "center" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, color: "#F59E0B", letterSpacing: 3 }}>
+        <div style={{ marginTop: 24, textAlign: "center" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 14, color: "#F59E0B", letterSpacing: 3, fontWeight: 700 }}>
             TetriXX
           </div>
-          <div style={{ color: "#333", fontSize: 10, marginTop: 4 }}>
+          <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
             Automating complexity, delivering clarity
           </div>
         </div>
@@ -839,10 +844,11 @@ const S = {
     left: 0,
     right: 0,
     textAlign: "center",
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 14,
     fontFamily: "monospace",
     zIndex: 1,
+    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
   },
   // ── Standard screens (non-background-image) ──
   container: {
@@ -858,20 +864,23 @@ const S = {
     textAlign: "center",
   },
   title: {
-    fontSize: "clamp(32px, 10vw, 56px)",
+    fontSize: 48,
     fontWeight: 900,
     margin: "0 0 8px",
     letterSpacing: -1,
     background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
+    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
   },
   subtitle: {
     fontFamily: "monospace",
-    fontSize: 12,
-    color: "#666",
-    letterSpacing: 4,
+    fontSize: 24,
+    fontWeight: 700,
+    color: "#fff",
+    letterSpacing: 2,
     marginBottom: 24,
+    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
   },
   card: {
     background: "#0a0a0a",
@@ -890,15 +899,15 @@ const S = {
     marginBottom: 10,
   },
   cardBody: {
-    color: "#888",
-    fontSize: 14,
+    color: "#aaa",
+    fontSize: 18,
     lineHeight: 1.7,
     margin: 0,
   },
   footer: {
     marginTop: 24,
-    color: "#2a2a2a",
-    fontSize: 10,
+    color: "#555",
+    fontSize: 14,
     fontFamily: "monospace",
   },
   loadingText: {
