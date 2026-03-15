@@ -1,6 +1,12 @@
 {
   "rules": {
-    ".read": "now < 1776096000000",  // 2026-4-14
-    ".write": "now < 1776096000000",  // 2026-4-14
+    "game": {
+      ".read": true,
+      ".write": true
+    },
+    "players": {
+      ".read": true,
+      ".write": true
+    }
   }
 }
