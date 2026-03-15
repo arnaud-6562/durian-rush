@@ -92,9 +92,10 @@ export default function PlayerScreen() {
       console.log("PLAYER PHASE →", p);
       setPhase(p);
       setLoading(false);
-      // Reset when round1 starts
+      // Reset ALL local game state when round1 starts
       if (p === "round1") {
         setMyWeek(0);
+        setMyDecisions(null);
         setFinished(false);
         setForceEnded(false);
       }
@@ -112,7 +113,7 @@ export default function PlayerScreen() {
   // Listen for force-end signal from admin
   useEffect(() => {
     const unsub = onValue(ref(db, "game/forceEnded"), (snap) => {
-      if (snap.val() === true) setForceEnded(true);
+      setForceEnded(snap.val() === true);
     });
     return unsub;
   }, []);

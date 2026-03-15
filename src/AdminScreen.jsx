@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { ref, set, onValue } from "firebase/database";
+import { ref, set, update, onValue } from "firebase/database";
 import { db } from "./firebase";
 import {
   NODES, DEMAND, N_WEEKS, EVENTS,
@@ -808,8 +808,20 @@ export default function AdminScreen() {
               )}
 
               <button onClick={() => {
+                // Reset all player game state before starting
+                if (playersData) {
+                  const resets = {};
+                  Object.keys(playersData).forEach(uid => {
+                    resets[`players/${uid}/currentWeek`] = 0;
+                    resets[`players/${uid}/done`] = false;
+                    resets[`players/${uid}/decisions`] = null;
+                    resets[`players/${uid}/totalCost`] = 0;
+                  });
+                  update(ref(db), resets);
+                }
                 set(ref(db, "game/locked"), true);
                 set(ref(db, "game/roundActive"), true);
+                set(ref(db, "game/forceEnded"), false);
                 startRoundTimer();
                 setPhase("round1");
               }} style={{
