@@ -480,7 +480,7 @@ export default function AdminScreen() {
     if (aiTimer.current) clearTimeout(aiTimer.current);
     set(ref(db, "players"), null);
     set(ref(db, "ai"), null);
-    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false, roundActive: false });
+    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false, roundActive: false, weekDeadline: null });
     setPhaseLocal("intro");
     setDeadline(null);
     setAiGoodGame(null);
@@ -572,23 +572,27 @@ export default function AdminScreen() {
   const timerRed = remaining > 0 && remaining < 30_000;
   const timerWarn = remaining > 0 && remaining < 60_000;
 
-  // Auto-force-end when timer expires — check deadline directly, not remaining
+  // Auto-force-end when timer expires.
+  // Use a ref for forceEndRound so the effect only re-runs on phase/deadline changes.
+  const forceEndRef = useRef(forceEndRound);
+  forceEndRef.current = forceEndRound;
+
   useEffect(() => {
     if (phase !== "round1") return;
     if (!deadline) return;
     if (forceEndedRef.current) return;
-    // Set a single timeout for when the deadline actually passes
     const ms = deadline - Date.now();
+    console.log("FORCE END scheduled for:", new Date(deadline).toLocaleTimeString(), "that is", Math.round(ms / 1000), "seconds from now");
     if (ms <= 0) {
-      // Deadline already passed (shouldn't happen normally)
-      forceEndRound();
+      // Deadline already in the past — do NOT auto-force, this is stale data
+      console.warn("STALE DEADLINE detected, ignoring. deadline:", deadline, "now:", Date.now());
       return;
     }
     const id = setTimeout(() => {
-      if (!forceEndedRef.current) forceEndRound();
+      if (!forceEndedRef.current) forceEndRef.current();
     }, ms);
     return () => clearTimeout(id);
-  }, [phase, deadline, forceEndRound]);
+  }, [phase, deadline]);
 
   // ── Phase bar ─────────────────────────────────────────────────
   const PhaseBar = () => (
