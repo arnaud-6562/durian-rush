@@ -1,6 +1,19 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    "game": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'"
+    },
+    "players": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'",
+      "$uid": {
+        ".write": true
+      }
+    },
+    "ai": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'"
+    }
   }
 }

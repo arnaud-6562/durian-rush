@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ref, set, update, onValue } from "firebase/database";
-import { db } from "./firebase";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { db, auth } from "./firebase";
 import {
   NODES, DEMAND, N_WEEKS, EVENTS,
   HOLD, BACK,
@@ -41,6 +42,8 @@ ChartJS.register(
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
 const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results","ended"];
 const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes total for round 1
+
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "admin@durianrush.app";
 
 function writePhase(phase) { set(ref(db, "game/phase"), phase); }
 function writeWeek(week) { set(ref(db, "game/currentWeek"), week); }
@@ -353,6 +356,39 @@ function LobbySlides() {
 
 // ══ ADMIN SCREEN — PROJECTOR GAME SHOW ══════════════════════════
 export default function AdminScreen() {
+  // ── Admin auth gate ──
+  const [adminAuthed, setAdminAuthed] = useState(false);
+  const [adminChecking, setAdminChecking] = useState(true);
+  const [adminPin, setAdminPin] = useState("");
+  const [adminError, setAdminError] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(false);
+
+  // Auto-restore admin session on mount
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user && user.email === ADMIN_EMAIL) {
+        setAdminAuthed(true);
+      }
+      setAdminChecking(false);
+    });
+    return unsub;
+  }, []);
+
+  const handleAdminLogin = async () => {
+    if (!adminPin) { setAdminError("Enter PIN"); return; }
+    setAdminLoading(true);
+    setAdminError(null);
+    try {
+      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, adminPin);
+      setAdminAuthed(true);
+    } catch {
+      setAdminError("Wrong PIN");
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  // ── Game state ──
   const [phase, setPhaseLocal] = useState("intro");
   const [deadline, setDeadline] = useState(null);
   const [aiGoodGame, setAiGoodGame] = useState(null);
@@ -593,6 +629,72 @@ export default function AdminScreen() {
     }, ms);
     return () => clearTimeout(id);
   }, [phase, deadline]);
+
+  // ── Admin PIN gate ───────────────────────────────────────────
+  if (adminChecking) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 14, color: "#555" }}>Loading…</div>
+      </div>
+    );
+  }
+
+  if (!adminAuthed) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: "#050505", color: "#fff",
+        fontFamily: "system-ui, sans-serif",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🔒</div>
+        <h1 style={{
+          fontSize: 36, fontWeight: 900, margin: "0 0 8px",
+          background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          ADMIN ACCESS
+        </h1>
+        <p style={{ fontFamily: "monospace", fontSize: 14, color: "#555", letterSpacing: 2, marginBottom: 32 }}>
+          DURIAN RUSH CONTROL PANEL
+        </p>
+        <div style={{ maxWidth: 320, width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+          <input
+            type="password"
+            placeholder="Enter PIN"
+            value={adminPin}
+            onChange={e => setAdminPin(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleAdminLogin()}
+            autoFocus
+            style={{
+              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 10, padding: "16px", fontSize: 24, color: "#fff",
+              fontFamily: "monospace", textAlign: "center", letterSpacing: 8,
+              outline: "none", width: "100%", boxSizing: "border-box",
+            }}
+          />
+          {adminError && (
+            <div style={{ color: "#EF4444", fontSize: 13, fontFamily: "monospace", textAlign: "center" }}>
+              {adminError}
+            </div>
+          )}
+          <button
+            onClick={handleAdminLogin}
+            disabled={adminLoading}
+            style={{
+              background: "linear-gradient(135deg, #F59E0B, #D97706)",
+              color: "#000", border: "none", borderRadius: 12,
+              padding: "14px", fontSize: 16, fontWeight: 900,
+              cursor: "pointer", fontFamily: "monospace", letterSpacing: 2,
+              opacity: adminLoading ? 0.5 : 1, width: "100%",
+            }}
+          >
+            {adminLoading ? "VERIFYING…" : "🔓 UNLOCK"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Phase bar ─────────────────────────────────────────────────
   const PhaseBar = () => (
