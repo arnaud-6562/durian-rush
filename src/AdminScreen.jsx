@@ -9,12 +9,34 @@ import {
 import DurryIntro from "./components/DurryIntro";
 import MalaysiaMap from "./components/MalaysiaMap";
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, Title, Tooltip, Legend,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  LineController,
+  LineElement,
+  PointElement,
+  Filler,
+  Title,
+  Tooltip,
+  Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  LineController,
+  LineElement,
+  PointElement,
+  Filler,
+  Title,
+  Tooltip,
+  Legend
+);
 
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
 const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results"];
@@ -349,6 +371,7 @@ export default function AdminScreen() {
   const remaining = useCountdown(deadline);
 
   const setPhase = useCallback((p) => {
+    console.log("PHASE TRANSITION →", p);
     setPhaseLocal(p);
     writePhase(p);
   }, []);

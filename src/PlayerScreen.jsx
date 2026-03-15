@@ -89,6 +89,7 @@ export default function PlayerScreen() {
   useEffect(() => {
     const unsub = onValue(ref(db, "game/phase"), (snap) => {
       const p = snap.val();
+      console.log("PLAYER PHASE →", p);
       setPhase(p);
       setLoading(false);
       // Reset when round1 starts
@@ -192,21 +193,26 @@ export default function PlayerScreen() {
     return () => clearTimeout(t);
   }, [otpStep]);
 
-  const submitDecision = async (opt) => {
-    if (!player || finished) return;
-    // Write decision for current week
-    await set(ref(db, `players/${player.uid}/decisions/week${myWeek}`), {
-      choice: opt.key,
-      quantity: opt.value,
-      timestamp: Date.now(),
-    });
-    // Advance to next week immediately
-    const nextWeek = myWeek + 1;
-    await set(ref(db, `players/${player.uid}/currentWeek`), nextWeek);
+  const submitDecision = (opt) => {
+    if (!player || finished || myWeek >= N_WEEKS) return;
+    const currentWeek = myWeek;
+    const nextWeek = currentWeek + 1;
+
+    // 1. Update local state IMMEDIATELY (no Firebase round-trip)
+    setMyWeek(nextWeek);
     if (nextWeek >= N_WEEKS) {
       setFinished(true);
     }
-    setMyWeek(nextWeek);
+
+    // 2. Write to Firebase in background (fire-and-forget)
+    set(ref(db, `players/${player.uid}/decisions/week${currentWeek}`), {
+      choice: opt.key,
+      quantity: opt.value,
+      timestamp: Date.now(),
+    }).catch(e => console.error("Decision write failed:", e));
+
+    set(ref(db, `players/${player.uid}/currentWeek`), nextWeek)
+      .catch(e => console.error("Week write failed:", e));
   };
 
   const finishRegistration = async (verified) => {
@@ -524,6 +530,17 @@ export default function PlayerScreen() {
 
   // ── Round 1 — self-paced play ──────────────────────────────────
   if (phase === "round1") {
+    // If not registered, prompt to watch screen
+    if (!player) {
+      return (
+        <div style={S.container}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🎮</div>
+          <h1 style={{ ...S.title, fontSize: 36 }}>ROUND 1 IN PROGRESS</h1>
+          <p style={{ color: "#aaa", fontSize: 18 }}>Registration is closed. Watch the big screen!</p>
+        </div>
+      );
+    }
+
     const isDone = finished || forceEnded || myWeek >= N_WEEKS;
     const week = Math.min(myWeek, N_WEEKS - 1);
     const demand = DEMAND[week];
