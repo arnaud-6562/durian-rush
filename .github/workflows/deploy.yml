@@ -24,9 +24,4 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_TOKEN }}
-          projectId: durian-rush-kl
-          channelId: liveßß
+        run: npx firebase-tools@latest deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }} --project durian-rush-kl --non-interactive
