@@ -39,7 +39,7 @@ ChartJS.register(
 );
 
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
-const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results"];
+const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results","ended"];
 const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes total for round 1
 
 function writePhase(phase) { set(ref(db, "game/phase"), phase); }
@@ -1848,6 +1848,15 @@ export default function AdminScreen() {
             ))}
           </div>
           <div style={{ textAlign: "center", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={() => setPhase("ended")} style={{
+              background: "linear-gradient(135deg, #F59E0B, #D97706)",
+              color: "#000", border: "none", borderRadius: 10,
+              padding: "14px 36px", cursor: "pointer", fontFamily: "monospace",
+              fontSize: 14, fontWeight: 900, letterSpacing: 2,
+              boxShadow: "0 0 20px #F59E0B33",
+            }}>
+              END SESSION
+            </button>
             <button onClick={() => {
               const lb = buildLeaderboard(playersData);
               const escCSV = (v) => {
@@ -1881,16 +1890,82 @@ export default function AdminScreen() {
             }}>
               📥 EXPORT LEADS
             </button>
-            <button onClick={reset} style={{
-              background: "transparent", color: "#2a2a2a", border: "1px solid #161616", borderRadius: 8,
-              padding: "10px 24px", cursor: "pointer", fontFamily: "monospace", fontSize: 10,
-            }}>
-              ↺ RESET
-            </button>
           </div>
           <div style={{ textAlign: "center", marginTop: 16, color: "#1a1a1a", fontSize: 10, fontFamily: "monospace" }}>
             powered by TetriXX · automating complexity, delivering clarity
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── ENDED — session over ──────────────────────────────────────
+  if (phase === "ended") {
+    return (
+      <div style={{
+        minHeight: "100vh", background: "#050505", color: "#fff",
+        fontFamily: "system-ui, sans-serif",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: "32px 24px", textAlign: "center",
+      }}>
+        <div style={{ fontSize: 80, marginBottom: 16 }}>🏁</div>
+        <h1 style={{
+          fontSize: "clamp(32px, 8vw, 56px)", fontWeight: 900, margin: "0 0 12px",
+          background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          SESSION ENDED
+        </h1>
+        <div style={{
+          fontFamily: "monospace", fontSize: 20, color: "#888",
+          letterSpacing: 2, marginBottom: 32,
+        }}>
+          {playerCount} players participated
+        </div>
+
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => {
+            const lb = buildLeaderboard(playersData);
+            const escCSV = (v) => {
+              const s = String(v ?? "");
+              return s.includes(",") || s.includes('"') || s.includes("\n")
+                ? '"' + s.replace(/"/g, '""') + '"' : s;
+            };
+            const rows = [["Rank","Name","Email","Phone","TotalCost","JoinedAt"]];
+            lb.forEach((p, i) => {
+              const raw = playersData[p.uid] || {};
+              rows.push([
+                i + 1, escCSV(p.name), escCSV(raw.email || ""),
+                escCSV(raw.phone || ""), p.cost.toFixed(2),
+                raw.joinedAt ? new Date(raw.joinedAt).toISOString() : "",
+              ]);
+            });
+            const csv = rows.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "durian-rush-leads.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }} style={{
+            background: "linear-gradient(135deg, #10B981, #059669)",
+            color: "#000", border: "none", borderRadius: 12,
+            padding: "14px 32px", cursor: "pointer", fontFamily: "monospace",
+            fontSize: 14, fontWeight: 900, letterSpacing: 1,
+          }}>
+            📥 EXPORT LEADS
+          </button>
+          <button onClick={reset} style={{
+            background: "linear-gradient(135deg, #EF4444, #B91C1C)",
+            color: "#fff", border: "none", borderRadius: 12,
+            padding: "14px 32px", cursor: "pointer", fontFamily: "monospace",
+            fontSize: 14, fontWeight: 900, letterSpacing: 1,
+          }}>
+            ↺ RESET FOR NEXT RUN
+          </button>
+        </div>
+
+        <div style={{ marginTop: 40, color: "#333", fontSize: 11, fontFamily: "monospace" }}>
+          powered by TetriXX · automating complexity, delivering clarity
         </div>
       </div>
     );

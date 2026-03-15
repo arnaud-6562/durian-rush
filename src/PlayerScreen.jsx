@@ -926,6 +926,78 @@ export default function PlayerScreen() {
     );
   }
 
+  // ── Ended — game over brand screen ────────────────────────────
+  if (phase === "ended") {
+    const myCost = simulatePlayerCost(myDecisions);
+    return (
+      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.png)" }}>
+        <div style={{ ...S.overlay, background: "rgba(0,0,0,0.75)" }} />
+        <div style={S.centerContent}>
+          <img
+            src="/can1.png"
+            alt="Durian Rush"
+            style={{ width: 200, height: 200, objectFit: "contain", marginBottom: 16, borderRadius: 16 }}
+          />
+          <h1 style={{
+            fontSize: 42, fontWeight: 900, margin: "0 0 8px",
+            background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+          }}>
+            DURIAN RUSH
+          </h1>
+          <div style={{
+            fontSize: 24, fontWeight: 700, color: "#fff", marginBottom: 8,
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+          }}>
+            Thanks for playing! 🎮
+          </div>
+          <div style={{
+            fontFamily: "monospace", fontSize: 14, color: "#aaa",
+            letterSpacing: 2, marginBottom: 24,
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+          }}>
+            THE SUPPLY CHAIN CHALLENGE
+          </div>
+
+          {player && myRank != null && (
+            <div style={{
+              background: "rgba(0,0,0,0.6)", borderRadius: 12, padding: "12px 24px",
+              marginBottom: 32, border: "1px solid #F59E0B33",
+            }}>
+              <div style={{
+                fontFamily: "monospace", fontSize: 16, color: "#F59E0B", fontWeight: 900,
+              }}>
+                {myRank <= 3 ? ["🥇", "🥈", "🥉"][myRank - 1] + " " : ""}
+                You finished #{myRank} with ${myCost.toFixed(0)}
+              </div>
+            </div>
+          )}
+
+          <div style={{
+            borderTop: "1px solid #333", paddingTop: 24, marginTop: 8,
+            textAlign: "center", width: "100%",
+          }}>
+            <div style={{ color: "#aaa", fontSize: 14, marginBottom: 8 }}>
+              Connect with TetriXX
+            </div>
+            <div style={{
+              fontFamily: "monospace", fontSize: 22, fontWeight: 900, letterSpacing: 3,
+              background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              marginBottom: 6,
+            }}>
+              tetrixx.io
+            </div>
+            <div style={{ color: "#555", fontSize: 11 }}>
+              Automating complexity, delivering clarity for a sustainable future
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Unknown phase fallback ─────────────────────────────────────
   return (
     <div style={S.container}>
