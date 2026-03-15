@@ -7,6 +7,7 @@ import {
   stepGame, newGame, chainCost, retailerCost,
 } from "./GameEngine";
 import DurryIntro from "./components/DurryIntro";
+import MalaysiaMap from "./components/MalaysiaMap";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Title, Tooltip, Legend,
@@ -211,9 +212,9 @@ const LOBBY_SLIDES = [
   },
   {
     icon: "🔗",
-    title: "4 TIERS. ONE CHAIN.",
-    flow: true,
-    body: "Every order takes time to arrive.\nDecisions you make today\naffect the chain 2-4 weeks from now.",
+    title: "THE MALAYSIAN SUPPLY CHAIN",
+    map: true,
+    body: "Every order takes 2-4 weeks to arrive.",
   },
   {
     icon: "📱",
@@ -287,29 +288,10 @@ function LobbySlides() {
         {slide.title}
       </div>
 
-      {/* Supply chain flow diagram (slide 2) */}
-      {slide.flow && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
-          justifyContent: "center", marginBottom: 16,
-        }}>
-          {[
-            { emoji: "🌾", name: "Penang Farm" },
-            { emoji: "🏭", name: "Ipoh Factory" },
-            { emoji: "🚛", name: "Shah Alam Hub" },
-            { emoji: "🏪", name: "Bangsar KL" },
-          ].map((node, i, arr) => (
-            <span key={node.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                background: "#111", border: "1px solid #333", borderRadius: 8,
-                padding: "6px 10px", fontFamily: "monospace", fontSize: 12,
-                color: "#ccc", whiteSpace: "nowrap",
-              }}>
-                {node.emoji} {node.name}
-              </span>
-              {i < arr.length - 1 && <span style={{ color: "#F59E0B", fontSize: 18, fontWeight: 900 }}>→</span>}
-            </span>
-          ))}
+      {/* Animated Malaysia map (slide 2) */}
+      {slide.map && (
+        <div style={{ width: "100%", marginBottom: 8 }}>
+          <MalaysiaMap height={280} />
         </div>
       )}
 
