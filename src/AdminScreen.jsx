@@ -288,10 +288,10 @@ function LobbySlides() {
     }}>
       {/* Icon or image */}
       {slide.image === "durry" && (
-        <img src="/durry.png" alt="Durry" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 12 }} />
+        <img src="/durry.jpg" alt="Durry" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 12 }} />
       )}
       {slide.image === "glitch" && (
-        <img src="/durry.png" alt="Glitch" style={{
+        <img src="/durry.jpg" alt="Glitch" style={{
           width: 100, height: 100, objectFit: "contain", marginBottom: 12,
           filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
         }} />
@@ -665,7 +665,7 @@ export default function AdminScreen() {
               borderRadius: 16, padding: "24px 28px", width: 240,
               textAlign: "center", position: "relative",
             }}>
-              <img src="/durry.png" alt="Durry" style={{ width: 150, height: 150, objectFit: "contain", marginBottom: 12 }} />
+              <img src="/durry.jpg" alt="Durry" style={{ width: 150, height: 150, objectFit: "contain", marginBottom: 12 }} />
               <div style={{
                 fontSize: 28, fontWeight: 900, letterSpacing: 4,
                 background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
@@ -694,7 +694,7 @@ export default function AdminScreen() {
               opacity: 0.7,
             }}>
               <img
-                src="/durry.png" alt="Glitch"
+                src="/durry.jpg" alt="Glitch"
                 style={{
                   width: 150, height: 150, objectFit: "contain", marginBottom: 12,
                   filter: "hue-rotate(120deg) saturate(200%)",
@@ -742,7 +742,7 @@ export default function AdminScreen() {
     return (
       <div style={{
         minHeight: "100vh", color: "#fff", fontFamily: "system-ui, sans-serif",
-        backgroundImage: "url(/can1.png)", backgroundSize: "cover", backgroundPosition: "center",
+        backgroundImage: "url(/can1.jpg)", backgroundSize: "cover", backgroundPosition: "center",
         position: "relative",
       }}>
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 0 }} />
@@ -1241,7 +1241,7 @@ export default function AdminScreen() {
           <div style={{ position: "absolute", top: 24, left: 0, right: 0, textAlign: "center" }}>
             <RoundBadge round="ROUND 2 · DURRY · CLEAN DATA" color="#10B981" />
           </div>
-          <img src="/durry.png" alt="Durry" style={{ width: 120, height: 120, objectFit: "contain", marginBottom: 16, opacity: 0.8 }} />
+          <img src="/durry.jpg" alt="Durry" style={{ width: 120, height: 120, objectFit: "contain", marginBottom: 16, opacity: 0.8 }} />
           <div style={{
             fontFamily: "monospace", fontSize: "clamp(80px, 20vw, 160px)", fontWeight: 900,
             color: "#F59E0B", lineHeight: 1, textShadow: "0 0 60px #F59E0B44",
@@ -1355,7 +1355,7 @@ export default function AdminScreen() {
           {/* Header with Durry + total */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <img src="/durry.png" alt="Durry" style={{ width: 60, height: 60, objectFit: "contain" }} />
+              <img src="/durry.jpg" alt="Durry" style={{ width: 60, height: 60, objectFit: "contain" }} />
               <div>
                 <RoundBadge round="ROUND 2 · DURRY" color="#10B981" />
                 <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginTop: 4 }}>CLEAN DATA · ALL 10 WEEKS</div>
@@ -1411,7 +1411,7 @@ export default function AdminScreen() {
             background: "#10B98108", border: "1px solid #10B98122", borderRadius: 12,
             padding: "20px 24px", marginBottom: 20, textAlign: "center",
           }}>
-            <img src="/durry.png" alt="Durry" style={{ width: 48, height: 48, objectFit: "contain", marginBottom: 8, opacity: 0.7 }} />
+            <img src="/durry.jpg" alt="Durry" style={{ width: 48, height: 48, objectFit: "contain", marginBottom: 8, opacity: 0.7 }} />
             <div style={{
               fontFamily: "monospace", fontSize: 15, color: "#10B981",
               lineHeight: 2, fontWeight: 700, fontStyle: "italic",
@@ -1512,7 +1512,7 @@ export default function AdminScreen() {
             <RoundBadge round="ROUND 3 · GLITCH · CORRUPTED DATA" color="#EF4444" />
           </div>
           <img
-            src="/durry.png" alt="Glitch"
+            src="/durry.jpg" alt="Glitch"
             style={{
               width: 120, height: 120, objectFit: "contain", marginBottom: 16,
               filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
@@ -1659,7 +1659,7 @@ export default function AdminScreen() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <img
-                src="/durry.png" alt="Glitch"
+                src="/durry.jpg" alt="Glitch"
                 style={{
                   width: 60, height: 60, objectFit: "contain",
                   filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
@@ -1742,7 +1742,7 @@ export default function AdminScreen() {
             padding: "20px 24px", marginBottom: 20, textAlign: "center",
           }}>
             <img
-              src="/durry.png" alt="Glitch"
+              src="/durry.jpg" alt="Glitch"
               style={{
                 width: 48, height: 48, objectFit: "contain", marginBottom: 8,
                 filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",

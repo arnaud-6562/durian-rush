@@ -67,7 +67,7 @@ export default function DurryIntro({ humanCost, onComplete }) {
       {/* Right: Durry */}
       <div style={styles.vsTeam}>
         <img
-          src="/durry.png"
+          src="/durry.jpg"
           alt="Durry"
           style={{ width: 200, height: 200, objectFit: "contain" }}
         />

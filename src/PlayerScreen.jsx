@@ -332,7 +332,7 @@ export default function PlayerScreen() {
   // ── Lobby — OTP step ───────────────────────────────────────────
   if (phase === "lobby" && otpStep && !player) {
     return (
-      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.png)" }}>
+      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.jpg)" }}>
         <div style={S.overlay} />
         <div style={S.centerContent}>
           <div style={S.glassCard}>
@@ -394,7 +394,7 @@ export default function PlayerScreen() {
     // Already registered → waiting screen (show registration form if not registered)
     if (player) {
       return (
-        <div style={{ ...S.bgScreen, backgroundImage: "url(/can2.png)" }}>
+        <div style={{ ...S.bgScreen, backgroundImage: "url(/can2.jpg)" }}>
           <div style={S.overlay} />
           <div style={S.centerContent}>
             <div style={{ fontSize: 80, marginBottom: 12 }}>{player.emoji}</div>
@@ -437,7 +437,7 @@ export default function PlayerScreen() {
 
     // Not registered → registration form
     return (
-      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.png)" }}>
+      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.jpg)" }}>
         <div style={S.overlay} />
         <div style={S.centerContent}>
           <h1 style={{
@@ -930,11 +930,11 @@ export default function PlayerScreen() {
   if (phase === "ended") {
     const myCost = simulatePlayerCost(myDecisions);
     return (
-      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.png)" }}>
+      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.jpg)" }}>
         <div style={{ ...S.overlay, background: "rgba(0,0,0,0.75)" }} />
         <div style={S.centerContent}>
           <img
-            src="/can1.png"
+            src="/can1.jpg"
             alt="Durian Rush"
             style={{ width: 200, height: 200, objectFit: "contain", marginBottom: 16, borderRadius: 16 }}
           />
