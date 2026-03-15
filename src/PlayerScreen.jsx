@@ -46,6 +46,7 @@ export default function PlayerScreen() {
   const [otpError, setOtpError] = useState(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [verifying, setVerifying] = useState(false);
+  const [showSkip, setShowSkip] = useState(false); // auto-show SKIP after 10s
   const formDataRef = useRef(null); // store form data during OTP
 
   // Game state — self-paced: player tracks own week locally
@@ -54,9 +55,10 @@ export default function PlayerScreen() {
   const [finished, setFinished] = useState(false);
   const [forceEnded, setForceEnded] = useState(false);
 
-  // Player count + mini-leaderboard data
+  // Player count + mini-leaderboard data + personal rank
   const [playerCount, setPlayerCount] = useState(0);
   const [topPlayers, setTopPlayers] = useState([]);
+  const [myRank, setMyRank] = useState(null);
 
   // On mount: restore player from sessionStorage, then verify against Firebase
   useEffect(() => {
@@ -135,6 +137,12 @@ export default function PlayerScreen() {
         return a.cost - b.cost;
       });
       setTopPlayers(list.slice(0, 3));
+      // Compute personal rank
+      const saved = (() => { try { const s = sessionStorage.getItem("dr_player"); return s ? JSON.parse(s) : null; } catch { return null; } })();
+      if (saved) {
+        const idx = list.findIndex(p => p.uid === saved.uid);
+        setMyRank(idx >= 0 ? idx + 1 : null);
+      }
     });
     return unsub;
   }, []);
@@ -176,6 +184,13 @@ export default function PlayerScreen() {
     const id = setInterval(() => setResendTimer(t => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
   }, [resendTimer]);
+
+  // Auto-show SKIP button after 10s in OTP step
+  useEffect(() => {
+    if (!otpStep) { setShowSkip(false); return; }
+    const t = setTimeout(() => setShowSkip(true), 10000);
+    return () => clearTimeout(t);
+  }, [otpStep]);
 
   const submitDecision = async (opt) => {
     if (!player || finished) return;
@@ -227,12 +242,12 @@ export default function PlayerScreen() {
     setError(null);
     try {
       // Setup invisible recaptcha
-      if (!window._recaptchaVerifier) {
-        window._recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
           size: "invisible",
         });
       }
-      const result = await signInWithPhoneNumber(auth, fullPhone, window._recaptchaVerifier);
+      const result = await signInWithPhoneNumber(auth, fullPhone, window.recaptchaVerifier);
       setConfirmResult(result);
       setOtpStep(true);
       setResendTimer(30);
@@ -267,10 +282,10 @@ export default function PlayerScreen() {
   const handleResend = async () => {
     if (resendTimer > 0 || !formDataRef.current) return;
     try {
-      if (!window._recaptchaVerifier) {
-        window._recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
       }
-      const result = await signInWithPhoneNumber(auth, formDataRef.current.phone, window._recaptchaVerifier);
+      const result = await signInWithPhoneNumber(auth, formDataRef.current.phone, window.recaptchaVerifier);
       setConfirmResult(result);
       setResendTimer(30);
       setOtpError(null);
@@ -352,11 +367,13 @@ export default function PlayerScreen() {
                 <button onClick={handleResend} style={S.linkBtn}>Resend code</button>
               )}
             </div>
-            <div style={{ textAlign: "center", marginTop: 20, borderTop: "1px solid #333", paddingTop: 16 }}>
-              <button onClick={() => finishRegistration(false)} style={S.skipBtn}>
-                SKIP VERIFICATION →
-              </button>
-            </div>
+            {showSkip && (
+              <div style={{ textAlign: "center", marginTop: 20, borderTop: "1px solid #333", paddingTop: 16 }}>
+                <button onClick={() => finishRegistration(false)} style={S.skipBtn}>
+                  SKIP VERIFICATION →
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div style={S.footerAbsolute}>Powered by TetriXX</div>
@@ -367,7 +384,7 @@ export default function PlayerScreen() {
 
   // ── Lobby — registration or waiting ─────────────────────────────
   if (phase === "lobby") {
-    // Already registered → waiting screen
+    // Already registered → waiting screen (show registration form if not registered)
     if (player) {
       return (
         <div style={{ ...S.bgScreen, backgroundImage: "url(/can2.png)" }}>
@@ -682,6 +699,7 @@ export default function PlayerScreen() {
   // ── Round 1 results (locked leaderboard on admin) ─────────────
   if (phase === "round1_results") {
     const myCost = simulatePlayerCost(myDecisions);
+
     return (
       <div style={S.container}>
         <div style={{ fontSize: 64, marginBottom: 12 }}>🏁</div>
@@ -691,6 +709,15 @@ export default function PlayerScreen() {
           <div style={{ fontFamily: "monospace", fontSize: 48, fontWeight: 900, color: "#F59E0B" }}>
             ${myCost.toFixed(0)}
           </div>
+          {myRank != null && playerCount > 0 && (
+            <div style={{
+              fontFamily: "monospace", fontSize: 18, fontWeight: 900,
+              color: myRank <= 3 ? "#10B981" : "#aaa", marginTop: 12,
+            }}>
+              {myRank <= 3 ? ["🥇", "🥈", "🥉"][myRank - 1] + " " : ""}
+              YOU FINISHED #{myRank} of {playerCount}
+            </div>
+          )}
         </div>
         <p style={{ fontSize: 20, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
           Watch the big screen for results!
@@ -804,14 +831,23 @@ export default function PlayerScreen() {
     const scores = [
       { label: "YOU", cost: myCost, col: "#F59E0B", icon: player?.emoji ?? "👤" },
       { label: "DURRY (CLEAN)", cost: gc, col: "#10B981", icon: "⚡" },
-      { label: "DURRY (DIRTY)", cost: dc, col: "#EF4444", icon: "☠️" },
+      { label: "GLITCH (DIRTY)", cost: dc, col: "#EF4444", icon: "☠️" },
     ].sort((a, b) => a.cost - b.cost);
 
     return (
       <div style={S.container}>
         <div style={{ fontSize: 64, marginBottom: 8 }}>🏆</div>
         <h1 style={{ fontSize: 48, fontWeight: 900, color: "#F59E0B", margin: "0 0 8px", textShadow: "0 0 20px #F59E0B44" }}>GAME OVER</h1>
-        <p style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 20 }}>THREE ROUNDS. ONE LESSON.</p>
+
+        {myRank != null && playerCount > 0 && (
+          <div style={{
+            fontFamily: "monospace", fontSize: 20, fontWeight: 900,
+            color: myRank <= 3 ? "#10B981" : "#aaa", marginBottom: 16,
+          }}>
+            {myRank <= 3 ? ["🥇", "🥈", "🥉"][myRank - 1] + " " : ""}
+            YOU FINISHED #{myRank} of {playerCount}
+          </div>
+        )}
 
         <div style={{ maxWidth: 360, width: "100%", display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
           {scores.map((s, idx) => {
@@ -852,10 +888,17 @@ export default function PlayerScreen() {
           </p>
         </div>
         <div style={{ marginTop: 24, textAlign: "center" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 14, color: "#F59E0B", letterSpacing: 3, fontWeight: 700 }}>
+          <div style={{
+            fontFamily: "monospace", fontSize: 18, fontWeight: 900, letterSpacing: 3,
+            background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          }}>
             TetriXX
           </div>
-          <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
+          <div style={{ color: "#888", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>
+            tetrixx.io
+          </div>
+          <div style={{ color: "#555", fontSize: 11, marginTop: 4 }}>
             Automating complexity, delivering clarity
           </div>
         </div>

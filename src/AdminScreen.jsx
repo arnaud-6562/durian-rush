@@ -424,6 +424,7 @@ export default function AdminScreen() {
     forceEndedRef.current = true;
     // Signal players to stop
     await set(ref(db, "game/forceEnded"), true);
+    await set(ref(db, "game/roundActive"), false);
     // Auto-fill LEAN for every missing week on every player
     if (playersData) {
       const updates = {};
@@ -455,7 +456,8 @@ export default function AdminScreen() {
     if (!window.confirm("This will delete all player data. Are you sure?")) return;
     if (aiTimer.current) clearTimeout(aiTimer.current);
     set(ref(db, "players"), null);
-    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false });
+    set(ref(db, "ai"), null);
+    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false, roundActive: false });
     setPhaseLocal("intro");
     setDeadline(null);
     setAiGoodGame(null);
@@ -482,7 +484,8 @@ export default function AdminScreen() {
       if (w >= N_WEEKS) {
         setAiGoodGame(g); setSavedGood(g); setAiRunning(false);
         set(ref(db, "game/aiCleanCost"), retailerCost(g));
-        setPhase("ai_clean_results");
+        // 2-second pause before showing results
+        aiTimer.current = setTimeout(() => setPhase("ai_clean_results"), 2000);
         return;
       }
       g = stepGame(g, 0, "ai_clean");
@@ -508,7 +511,8 @@ export default function AdminScreen() {
       if (w >= N_WEEKS) {
         setAiDirtyGame(g); setAiRunning(false);
         set(ref(db, "game/aiDirtyCost"), retailerCost(g));
-        setPhase("ai_dirty_results");
+        // 2-second pause before showing results
+        aiTimer.current = setTimeout(() => setPhase("ai_dirty_results"), 2000);
         return;
       }
       g = stepGame(g, 0, "ai_dirty");
@@ -782,6 +786,7 @@ export default function AdminScreen() {
 
               <button onClick={() => {
                 set(ref(db, "game/locked"), true);
+                set(ref(db, "game/roundActive"), true);
                 startRoundTimer();
                 setPhase("round1");
               }} style={{
