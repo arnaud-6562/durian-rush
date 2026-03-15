@@ -480,7 +480,7 @@ export default function AdminScreen() {
     if (aiTimer.current) clearTimeout(aiTimer.current);
     set(ref(db, "players"), null);
     set(ref(db, "ai"), null);
-    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false, roundActive: false, weekDeadline: null });
+    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false, roundActive: false, weekDeadline: null, resetAt: Date.now() });
     setPhaseLocal("intro");
     setDeadline(null);
     setAiGoodGame(null);

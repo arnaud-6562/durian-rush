@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { ref, onValue, set } from "firebase/database";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { ref, onValue, set, get } from "firebase/database";
+import { RecaptchaVerifier, signInWithPhoneNumber, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase";
 import { DEMAND, N_WEEKS, EVENTS, buildVotes, simulatePlayerCost } from "./GameEngine";
 
@@ -60,15 +60,35 @@ export default function PlayerScreen() {
   const [topPlayers, setTopPlayers] = useState([]);
   const [myRank, setMyRank] = useState(null);
 
-  // On mount: restore player from sessionStorage, then verify against Firebase
+  // On mount: restore player from sessionStorage + validate Firebase Auth session
   useEffect(() => {
     let cancelled = false;
+
+    // 1. Handle Firebase Auth sessions (prevents ghost players after reset)
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      if (cancelled) return;
+      if (user) {
+        // Auth session exists — check if player record still exists in DB
+        const snap = await get(ref(db, `players/${user.uid}`));
+        if (!snap.exists() || !snap.val()?.name) {
+          // Player record gone or empty (game was reset) — sign out
+          console.log("Ghost session detected — signing out", user.uid);
+          await signOut(auth);
+          sessionStorage.removeItem("dr_player");
+          setPlayer(null);
+          setPlayerChecked(true);
+          return;
+        }
+      }
+    });
+
+    // 2. Restore from sessionStorage (non-auth players)
     const saved = (() => { try { const s = sessionStorage.getItem("dr_player"); return s ? JSON.parse(s) : null; } catch { return null; } })();
-    if (!saved) { setPlayerChecked(true); return; }
+    if (!saved) { setPlayerChecked(true); return () => { cancelled = true; unsubAuth(); }; }
     // Check if this uid still exists in Firebase
     const unsub = onValue(ref(db, `players/${saved.uid}`), (snap) => {
       if (cancelled) return;
-      if (snap.exists()) {
+      if (snap.exists() && snap.val()?.name) {
         setPlayer(saved);
       } else {
         // Player record gone (game was reset) — clear stale session
@@ -78,7 +98,7 @@ export default function PlayerScreen() {
       setPlayerChecked(true);
       unsub(); // one-shot read
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; unsubAuth(); };
   }, []);
 
   const clearPlayer = () => {
@@ -117,6 +137,22 @@ export default function PlayerScreen() {
     });
     return unsub;
   }, []);
+
+  // Listen for game reset — sign out players who joined before the reset
+  useEffect(() => {
+    const unsub = onValue(ref(db, "game/resetAt"), (snap) => {
+      const resetAt = snap.val();
+      if (!resetAt || !player) return;
+      if (player.joinedAt && resetAt > player.joinedAt) {
+        console.log("Game reset detected — clearing player session");
+        signOut(auth).catch(() => {});
+        sessionStorage.removeItem("dr_player");
+        setPlayer(null);
+        setPlayerChecked(true);
+      }
+    });
+    return unsub;
+  }, [player]);
 
   // Player count + top 3 mini-leaderboard
   useEffect(() => {
