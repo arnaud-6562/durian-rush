@@ -10,7 +10,7 @@ import DurryIntro from "./components/DurryIntro";
 
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
 const PHASES = ["intro","lobby","round1","durry_intro","ai_running","gigo_reveal","ai_dirty","results"];
-const WEEK_DURATION = 30_000; // 30s per week
+const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes total for round 1
 
 function writePhase(phase) { set(ref(db, "game/phase"), phase); }
 function writeWeek(week) { set(ref(db, "game/currentWeek"), week); }
@@ -36,21 +36,27 @@ function playerCost(decisions) {
   return cost;
 }
 
-function buildLeaderboard(playersData, currentWeek) {
+function buildLeaderboard(playersData) {
   if (!playersData) return [];
   return Object.entries(playersData)
     .map(([uid, p]) => {
       const dec = p.decisions || {};
+      const cw = p.currentWeek ?? 0;
       return {
         uid,
         name: p.name || "???",
         emoji: p.emoji || "👤",
         cost: playerCost(dec),
-        currentChoice: dec[`week${currentWeek}`]?.choice ?? null,
-        currentQty: dec[`week${currentWeek}`]?.quantity ?? null,
+        currentWeek: cw,
+        done: cw >= N_WEEKS,
       };
     })
-    .sort((a, b) => a.cost - b.cost);
+    .sort((a, b) => {
+      // Done players first, then by furthest week, then by cost
+      if (b.done !== a.done) return b.done ? 1 : -1;
+      if (b.currentWeek !== a.currentWeek) return b.currentWeek - a.currentWeek;
+      return a.cost - b.cost;
+    });
 }
 
 // ══ COUNTDOWN HOOK ══════════════════════════════════════════════
@@ -192,7 +198,6 @@ function TierCard({ tier, node, showAI, dirty }) {
 // ══ ADMIN SCREEN — PROJECTOR GAME SHOW ══════════════════════════
 export default function AdminScreen() {
   const [phase, setPhaseLocal] = useState("intro");
-  const [week, setWeekLocal] = useState(0);
   const [deadline, setDeadline] = useState(null);
   const [aiGoodGame, setAiGoodGame] = useState(null);
   const [aiDirtyGame, setAiDirtyGame] = useState(null);
@@ -201,10 +206,10 @@ export default function AdminScreen() {
   const [aiRunning, setAiRunning] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const [playersData, setPlayersData] = useState(null);
-  const [prevDecisions, setPrevDecisions] = useState({}); // track who just submitted
+  const [prevWeeks, setPrevWeeks] = useState({}); // track week changes for flash
   const [flashUids, setFlashUids] = useState(new Set());
   const aiTimer = useRef(null);
-  const advancedRef = useRef(false); // prevent double auto-advance
+  const forceEndedRef = useRef(false);
 
   const remaining = useCountdown(deadline);
 
@@ -223,62 +228,32 @@ export default function AdminScreen() {
     return unsub;
   }, []);
 
-  // Flash green when a new decision arrives
+  // Flash green when a player advances a week
   useEffect(() => {
     if (!playersData) return;
     const newFlash = new Set();
     for (const [uid, p] of Object.entries(playersData)) {
-      const key = `week${week}`;
-      const hasNow = p.decisions?.[key];
-      const hadBefore = prevDecisions[uid]?.[key];
-      if (hasNow && !hadBefore) newFlash.add(uid);
+      const cw = p.currentWeek ?? 0;
+      const prev = prevWeeks[uid] ?? 0;
+      if (cw > prev) newFlash.add(uid);
     }
     if (newFlash.size > 0) {
       setFlashUids(newFlash);
       setTimeout(() => setFlashUids(new Set()), 1200);
     }
     const snap = {};
-    for (const [uid, p] of Object.entries(playersData)) snap[uid] = p.decisions || {};
-    setPrevDecisions(snap);
-  }, [playersData, week]);
+    for (const [uid, p] of Object.entries(playersData)) snap[uid] = p.currentWeek ?? 0;
+    setPrevWeeks(snap);
+  }, [playersData]);
 
-  // Start deadline for a week
-  const startWeekTimer = useCallback(() => {
-    const dl = Date.now() + WEEK_DURATION;
+  // Start round timer (single timer for entire round)
+  const startRoundTimer = useCallback(() => {
+    const dl = Date.now() + ROUND_DURATION;
     setDeadline(dl);
     writeDeadline(dl);
-    advancedRef.current = false;
+    forceEndedRef.current = false;
+    set(ref(db, "game/forceEnded"), false);
   }, []);
-
-  // Auto-advance when timer hits 0
-  useEffect(() => {
-    if (phase !== "round1" || !deadline) return;
-    if (remaining > 0 || advancedRef.current) return;
-    advancedRef.current = true;
-    doAdvance();
-  }, [remaining, phase, deadline]);
-
-  const doAdvance = useCallback(() => {
-    const nextWeek = week + 1;
-    if (nextWeek >= N_WEEKS) {
-      setWeekLocal(nextWeek);
-      setDeadline(null);
-      writeDeadline(null);
-      setPhase("durry_intro");
-    } else {
-      setWeekLocal(nextWeek);
-      writeWeek(nextWeek);
-      const dl = Date.now() + WEEK_DURATION;
-      setDeadline(dl);
-      writeDeadline(dl);
-      advancedRef.current = false;
-    }
-  }, [week, setPhase]);
-
-  const forceAdvance = () => {
-    advancedRef.current = true;
-    doAdvance();
-  };
 
   const addTime = (ms) => {
     const newDl = (deadline || Date.now()) + ms;
@@ -286,13 +261,45 @@ export default function AdminScreen() {
     writeDeadline(newDl);
   };
 
+  // Force-end: auto-submit LEAN for all unfinished players, then advance to durry_intro
+  const forceEndRound = useCallback(async () => {
+    if (forceEndedRef.current) return;
+    forceEndedRef.current = true;
+    // Signal players to stop
+    await set(ref(db, "game/forceEnded"), true);
+    // Auto-fill LEAN for every missing week on every player
+    if (playersData) {
+      const updates = {};
+      for (const [uid, p] of Object.entries(playersData)) {
+        const cw = p.currentWeek ?? 0;
+        for (let w = cw; w < N_WEEKS; w++) {
+          if (!p.decisions?.[`week${w}`]) {
+            const demand = DEMAND[w];
+            updates[`players/${uid}/decisions/week${w}`] = {
+              choice: "A", quantity: demand, timestamp: Date.now(), auto: true,
+            };
+          }
+        }
+        if (cw < N_WEEKS) {
+          updates[`players/${uid}/currentWeek`] = N_WEEKS;
+        }
+      }
+      // Write all auto-fills
+      for (const [path, val] of Object.entries(updates)) {
+        await set(ref(db, path), val);
+      }
+    }
+    setDeadline(null);
+    writeDeadline(null);
+    setPhase("durry_intro");
+  }, [playersData, setPhase]);
+
   const reset = () => {
     if (!window.confirm("This will delete all player data. Are you sure?")) return;
     if (aiTimer.current) clearTimeout(aiTimer.current);
     set(ref(db, "players"), null);
-    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false });
+    set(ref(db, "game"), { phase: "intro", currentWeek: 0, locked: false, forceEnded: false });
     setPhaseLocal("intro");
-    setWeekLocal(0);
     setDeadline(null);
     setAiGoodGame(null);
     setAiDirtyGame(null);
@@ -301,9 +308,9 @@ export default function AdminScreen() {
     setAiRunning(false);
     setPlayerCount(0);
     setPlayersData(null);
-    setPrevDecisions({});
+    setPrevWeeks({});
     setFlashUids(new Set());
-    advancedRef.current = false;
+    forceEndedRef.current = false;
   };
 
   const startAIGood = () => {
@@ -342,14 +349,12 @@ export default function AdminScreen() {
     tick();
   };
 
-  const demand = DEMAND[Math.min(week, N_WEEKS - 1)];
-  const currentEvent = EVENTS[week];
-  const humanDone = week >= N_WEEKS;
   const aiGoodDone = aiGoodGame && aiGoodGame.week >= N_WEEKS;
   const dirtyDone  = aiDirtyGame && aiDirtyGame.week >= N_WEEKS;
 
-  const decisionsThisWeek = playersData
-    ? Object.values(playersData).filter(p => p.decisions && p.decisions[`week${week}`]).length
+  // Self-paced stats
+  const playersFinished = playersData
+    ? Object.values(playersData).filter(p => (p.currentWeek ?? 0) >= N_WEEKS).length
     : 0;
 
   const avgPlayerCost = playersData
@@ -360,9 +365,16 @@ export default function AdminScreen() {
       })()
     : 0;
 
-  const allIn = decisionsThisWeek >= playerCount && playerCount > 0;
-  const timerRed = remaining > 0 && remaining < 10_000;
-  const timerWarn = remaining > 0 && remaining < 30_000;
+  const allDone = playersFinished >= playerCount && playerCount > 0;
+  const timerRed = remaining > 0 && remaining < 30_000;
+  const timerWarn = remaining > 0 && remaining < 60_000;
+
+  // Auto-force-end when timer hits 0
+  useEffect(() => {
+    if (phase !== "round1" || !deadline) return;
+    if (remaining > 0 || forceEndedRef.current) return;
+    forceEndRound();
+  }, [remaining, phase, deadline, forceEndRound]);
 
   // ── Phase bar ─────────────────────────────────────────────────
   const PhaseBar = () => (
@@ -558,8 +570,7 @@ export default function AdminScreen() {
             </div>
             <button onClick={() => {
               set(ref(db, "game/locked"), true);
-              writeWeek(0);
-              startWeekTimer();
+              startRoundTimer();
               setPhase("round1");
             }} style={{
               background: "linear-gradient(135deg, #10B981, #059669)",
@@ -577,10 +588,10 @@ export default function AdminScreen() {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // ── ROUND 1: LIVE GAME SHOW PROJECTOR ─────────────────────────
+  // ── ROUND 1: SELF-PACED RACE ─────────────────────────────────
   // ══════════════════════════════════════════════════════════════
   if (phase === "round1") {
-    const lb = buildLeaderboard(playersData, week);
+    const lb = buildLeaderboard(playersData);
 
     return (
       <div style={{
@@ -594,16 +605,18 @@ export default function AdminScreen() {
           padding: "12px 24px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          {/* Left: Week */}
+          {/* Left: Round info */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{
               background: "#F59E0B", color: "#000", borderRadius: 8,
               padding: "6px 16px", fontFamily: "monospace", fontWeight: 900,
               fontSize: "clamp(16px, 3vw, 24px)", letterSpacing: 2,
             }}>
-              WEEK {week + 1} / {N_WEEKS}
+              ROUND 1
             </div>
-            <WeekTrack week={week} />
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#888" }}>
+              SELF-PACED · 10 WEEKS
+            </div>
           </div>
 
           {/* Center: Timer */}
@@ -618,39 +631,24 @@ export default function AdminScreen() {
             {remaining > 0 ? formatTime(remaining) : "0:00"}
           </div>
 
-          {/* Right: Player count + decisions */}
+          {/* Right: Finished count */}
           <div style={{ textAlign: "right" }}>
             <div style={{ fontFamily: "monospace", fontSize: 14, color: "#888", fontWeight: 900 }}>
               👥 {playerCount} players
             </div>
             <div style={{
               fontFamily: "monospace", fontSize: 16, fontWeight: 900,
-              color: allIn ? "#10B981" : "#F59E0B",
+              color: allDone ? "#10B981" : "#F59E0B",
               marginTop: 2,
             }}>
-              📊 {decisionsThisWeek}/{playerCount} {allIn ? "✓" : ""}
+              🏁 {playersFinished}/{playerCount} finished {allDone ? "✓" : ""}
             </div>
           </div>
         </div>
 
-        {/* ── EVENT BANNER ────────────────────────────────────── */}
-        {currentEvent && (
-          <div style={{
-            background: currentEvent.bg, borderBottom: `2px solid ${currentEvent.border}`,
-            padding: "8px 24px",
-            display: "flex", alignItems: "center", gap: 12,
-          }}>
-            <span style={{ fontSize: 24 }}>{currentEvent.emoji}</span>
-            <span style={{ fontWeight: 900, fontSize: 14, color: "#fff" }}>{currentEvent.title}</span>
-            <span style={{ color: "#bbb", fontSize: 12 }}>— {currentEvent.body}</span>
-          </div>
-        )}
-
         {/* ── MAIN: LEADERBOARD ───────────────────────────────── */}
         <div style={{ flex: 1, padding: "16px 24px", overflow: "auto" }}>
-          <div style={{
-            maxWidth: 1000, margin: "0 auto",
-          }}>
+          <div style={{ maxWidth: 1000, margin: "0 auto" }}>
             {/* Column headers */}
             <div style={{
               display: "flex", alignItems: "center", gap: 12,
@@ -661,8 +659,8 @@ export default function AdminScreen() {
               <div style={{ width: 40 }}>RANK</div>
               <div style={{ width: 36 }}></div>
               <div style={{ flex: 1 }}>PLAYER</div>
-              <div style={{ width: 80, textAlign: "center" }}>WEEK {week + 1}</div>
-              <div style={{ width: 90, textAlign: "right" }}>TOTAL COST</div>
+              <div style={{ width: 120, textAlign: "center" }}>PROGRESS</div>
+              <div style={{ width: 90, textAlign: "right" }}>COST</div>
             </div>
 
             {lb.map((p, idx) => {
@@ -670,6 +668,7 @@ export default function AdminScreen() {
               const isTop3 = idx < 3;
               const rankColors = ["#F59E0B", "#C0C0C0", "#CD7F32"];
               const rankIcons = ["🥇", "🥈", "🥉"];
+              const pct = Math.round((p.currentWeek / N_WEEKS) * 100);
 
               return (
                 <div key={p.uid} style={{
@@ -705,25 +704,33 @@ export default function AdminScreen() {
                     {p.name}
                   </div>
 
-                  {/* This week choice */}
-                  <div style={{
-                    width: 80, textAlign: "center",
-                    fontFamily: "monospace", fontWeight: 900,
-                    fontSize: 14,
-                  }}>
-                    {p.currentChoice ? (
+                  {/* Progress bar + week */}
+                  <div style={{ width: 120, textAlign: "center" }}>
+                    {p.done ? (
                       <span style={{
                         background: "#10B98122", border: "1px solid #10B98144",
-                        color: "#10B981", borderRadius: 6, padding: "3px 10px",
+                        color: "#10B981", borderRadius: 6, padding: "3px 12px",
+                        fontFamily: "monospace", fontWeight: 900, fontSize: 12,
                       }}>
-                        {p.currentChoice}
+                        ✓ DONE
                       </span>
                     ) : (
-                      <span style={{ color: "#F59E0B", fontSize: 18 }}>⏳</span>
+                      <div>
+                        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#888", marginBottom: 3 }}>
+                          Week {p.currentWeek + 1}/{N_WEEKS}
+                        </div>
+                        <div style={{ height: 4, background: "#1a1a1a", borderRadius: 2, overflow: "hidden" }}>
+                          <div style={{
+                            width: `${pct}%`, height: "100%",
+                            background: pct > 60 ? "#10B981" : "#F59E0B",
+                            transition: "width 0.3s",
+                          }} />
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Total cost */}
+                  {/* Cost */}
                   <div style={{
                     width: 90, textAlign: "right",
                     fontFamily: "monospace", fontWeight: 900,
@@ -738,7 +745,7 @@ export default function AdminScreen() {
 
             {lb.length === 0 && (
               <div style={{ textAlign: "center", padding: 40, color: "#333", fontFamily: "monospace" }}>
-                Waiting for players to join…
+                Waiting for players…
               </div>
             )}
           </div>
@@ -750,49 +757,43 @@ export default function AdminScreen() {
           padding: "10px 24px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          {/* Demand info */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>
-              WEEK {week + 1} DEMAND:
-            </div>
-            <div style={{
-              fontFamily: "monospace", fontSize: 28, fontWeight: 900,
-              color: "#F59E0B",
-            }}>
-              {demand}
-            </div>
-            <div style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>cases</div>
-
-            {/* Mini demand curve */}
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 24, marginLeft: 8 }}>
+          {/* Demand curve */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>DEMAND CURVE:</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 28 }}>
               {DEMAND.map((d, i) => (
                 <div key={i} style={{
-                  width: 8, background: i < week ? "#F59E0B88" : i === week ? "#F59E0B" : "#222",
-                  height: `${(d / 18) * 100}%`, borderRadius: "2px 2px 0 0", minHeight: 2,
-                }} />
+                  width: 14,
+                  background: "#F59E0B",
+                  opacity: 0.3 + (d / 18) * 0.7,
+                  height: `${(d / 18) * 100}%`, borderRadius: "2px 2px 0 0", minHeight: 3,
+                  display: "flex", alignItems: "flex-end", justifyContent: "center",
+                }}>
+                  <span style={{ fontSize: 7, color: "#000", fontWeight: 900 }}>{d}</span>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Admin controls */}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={() => addTime(30_000)} style={{
+            <button onClick={() => addTime(60_000)} style={{
               background: "#111", border: "1px solid #333", color: "#888",
               borderRadius: 8, padding: "6px 14px", cursor: "pointer",
               fontFamily: "monospace", fontSize: 11, fontWeight: 700,
             }}>
-              +30s
+              +1 MIN
             </button>
-            <button onClick={forceAdvance} style={{
-              background: allIn ? "linear-gradient(135deg, #F59E0B, #D97706)" : "#1a1a1a",
-              border: allIn ? "2px solid #F59E0B" : "2px solid #333",
-              color: allIn ? "#000" : "#666",
+            <button onClick={forceEndRound} style={{
+              background: allDone ? "linear-gradient(135deg, #F59E0B, #D97706)" : "#1a1a1a",
+              border: allDone ? "2px solid #F59E0B" : "2px solid #333",
+              color: allDone ? "#000" : "#666",
               borderRadius: 8, padding: "8px 20px", cursor: "pointer",
               fontFamily: "monospace", fontSize: 12, fontWeight: 900, letterSpacing: 1,
-              boxShadow: allIn ? "0 0 20px #F59E0B44" : "none",
+              boxShadow: allDone ? "0 0 20px #F59E0B44" : "none",
               transition: "all 0.3s",
             }}>
-              {week + 1 >= N_WEEKS ? "🏁 END ROUND 1" : `▶ NEXT WEEK`}
+              {allDone ? "🏁 ALL DONE → ROUND 2" : "⏭ FORCE END ROUND 1"}
             </button>
           </div>
         </div>

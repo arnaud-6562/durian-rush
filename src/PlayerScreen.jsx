@@ -52,31 +52,26 @@ export default function PlayerScreen() {
   const [verifying, setVerifying] = useState(false);
   const formDataRef = useRef(null); // store form data during OTP
 
-  // Game state
-  const [currentWeek, setCurrentWeek] = useState(null);
-  const [weekChoice, setWeekChoice] = useState(null);
+  // Game state — self-paced: player tracks own week locally
+  const [myWeek, setMyWeek] = useState(0);
   const [deadline, setDeadline] = useState(null);
-  const prevWeekRef = useRef(null);
+  const [finished, setFinished] = useState(false);
+  const [forceEnded, setForceEnded] = useState(false);
 
-  // Player count for lobby
+  // Player count + mini-leaderboard data
   const [playerCount, setPlayerCount] = useState(0);
+  const [topPlayers, setTopPlayers] = useState([]);
 
   useEffect(() => {
     const unsub = onValue(ref(db, "game/phase"), (snap) => {
-      setPhase(snap.val());
+      const p = snap.val();
+      setPhase(p);
       setLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    const unsub = onValue(ref(db, "game/currentWeek"), (snap) => {
-      const w = snap.val();
-      if (w === null) return;
-      if (w !== prevWeekRef.current) {
-        prevWeekRef.current = w;
-        setCurrentWeek(w);
-        setWeekChoice(null);
+      // Reset when round1 starts
+      if (p === "round1") {
+        setMyWeek(0);
+        setFinished(false);
+        setForceEnded(false);
       }
     });
     return unsub;
@@ -89,11 +84,35 @@ export default function PlayerScreen() {
     return unsub;
   }, []);
 
-  // Player count listener
+  // Listen for force-end signal from admin
+  useEffect(() => {
+    const unsub = onValue(ref(db, "game/forceEnded"), (snap) => {
+      if (snap.val() === true) setForceEnded(true);
+    });
+    return unsub;
+  }, []);
+
+  // Player count + top 3 mini-leaderboard
   useEffect(() => {
     const unsub = onValue(ref(db, "players"), (snap) => {
       const val = snap.val();
-      setPlayerCount(val ? Object.keys(val).length : 0);
+      if (!val) { setPlayerCount(0); setTopPlayers([]); return; }
+      setPlayerCount(Object.keys(val).length);
+      // Build mini-leaderboard: top 3 by furthest week, then by cost
+      const list = Object.entries(val).map(([uid, p]) => ({
+        uid,
+        name: p.name || "???",
+        emoji: p.emoji || "👤",
+        currentWeek: p.currentWeek ?? 0,
+        cost: simulatePlayerCost(p.decisions),
+        done: (p.currentWeek ?? 0) >= N_WEEKS,
+      }));
+      list.sort((a, b) => {
+        if (b.done !== a.done) return b.done ? 1 : -1;
+        if (b.currentWeek !== a.currentWeek) return b.currentWeek - a.currentWeek;
+        return a.cost - b.cost;
+      });
+      setTopPlayers(list.slice(0, 3));
     });
     return unsub;
   }, []);
@@ -137,13 +156,20 @@ export default function PlayerScreen() {
   }, [resendTimer]);
 
   const submitDecision = async (opt) => {
-    if (!player || weekChoice) return;
-    setWeekChoice(opt.key);
-    await set(ref(db, `players/${player.uid}/decisions/week${currentWeek}`), {
+    if (!player || finished) return;
+    // Write decision for current week
+    await set(ref(db, `players/${player.uid}/decisions/week${myWeek}`), {
       choice: opt.key,
       quantity: opt.value,
       timestamp: Date.now(),
     });
+    // Advance to next week immediately
+    const nextWeek = myWeek + 1;
+    await set(ref(db, `players/${player.uid}/currentWeek`), nextWeek);
+    if (nextWeek >= N_WEEKS) {
+      setFinished(true);
+    }
+    setMyWeek(nextWeek);
   };
 
   const finishRegistration = async (verified) => {
@@ -449,13 +475,13 @@ export default function PlayerScreen() {
     );
   }
 
-  // ── Round 1 — humans play ──────────────────────────────────────
+  // ── Round 1 — self-paced play ──────────────────────────────────
   if (phase === "round1") {
-    const week = currentWeek ?? 0;
-    const demand = DEMAND[Math.min(week, N_WEEKS - 1)];
+    const isDone = finished || forceEnded || myWeek >= N_WEEKS;
+    const week = Math.min(myWeek, N_WEEKS - 1);
+    const demand = DEMAND[week];
     const votes = buildVotes(week, demand, 12, 12);
     const ev = EVENTS[week];
-    const locked = !!weekChoice;
 
     const secs = remaining != null ? Math.ceil(remaining / 1000) : null;
     const timerMin = secs != null ? Math.floor(secs / 60) : null;
@@ -463,29 +489,70 @@ export default function PlayerScreen() {
     const timerStr = secs != null ? `${timerMin}:${String(timerSec).padStart(2, "0")}` : null;
     const urgent = secs != null && secs <= 10;
 
+    const myCost = simulatePlayerCost(myDecisions);
+
+    // Finished screen
+    if (isDone) {
+      return (
+        <div style={S.container}>
+          <div style={{ fontSize: 64, marginBottom: 12 }}>🏁</div>
+          <h1 style={{ fontSize: 36, fontWeight: 900, color: "#10B981", margin: "0 0 8px" }}>ROUND COMPLETE!</h1>
+          <div style={{ ...S.card, borderColor: "#10B98144", textAlign: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 14, color: "#10B981", letterSpacing: 3, marginBottom: 8 }}>YOUR TOTAL COST</div>
+            <div style={{ fontFamily: "monospace", fontSize: 48, fontWeight: 900, color: "#F59E0B" }}>
+              ${myCost.toFixed(0)}
+            </div>
+          </div>
+          <p style={{ fontSize: 20, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
+            Watch the big screen for Round 2!
+          </p>
+          <div style={{ ...S.footer, marginTop: 20 }}>
+            {player ? `${player.emoji} ${player.name}` : ""}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div style={{ ...S.container, justifyContent: "flex-start", paddingTop: 16 }}>
+      <div style={{ ...S.container, justifyContent: "flex-start", paddingTop: 12 }}>
         {/* Timer bar */}
         {timerStr != null && (
           <div style={{
-            fontFamily: "monospace", fontSize: 18, fontWeight: 900,
-            color: urgent ? "#EF4444" : "#F59E0B",
-            marginBottom: 10,
+            fontFamily: "monospace", fontSize: 16, fontWeight: 900,
+            color: urgent ? "#EF4444" : "#555",
+            marginBottom: 6,
             animation: urgent ? "blink .5s step-end infinite" : "none",
           }}>
-            {"\u23F0"} {timerStr} remaining
+            {"\u23F0"} {timerStr} max
           </div>
         )}
+
+        {/* Week progress dots */}
+        <div style={{ display: "flex", gap: 5, marginBottom: 10 }}>
+          {DEMAND.map((_, i) => (
+            <div key={i} style={{
+              width: 24, height: 24, borderRadius: "50%",
+              background: i < myWeek ? "#10B981" : i === myWeek ? "#F59E0B" : "#1a1a1a",
+              border: i === myWeek ? "2px solid #F59E0B" : "2px solid #333",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, fontWeight: 900,
+              color: i < myWeek ? "#000" : i === myWeek ? "#000" : "#333",
+            }}>
+              {i < myWeek ? "✓" : i + 1}
+            </div>
+          ))}
+        </div>
+
         {/* Header */}
         <div style={{
-          fontFamily: "monospace", fontSize: 10, color: "#F59E0B",
-          letterSpacing: 3, marginBottom: 8,
+          fontFamily: "monospace", fontSize: 12, color: "#F59E0B",
+          letterSpacing: 3, marginBottom: 6,
         }}>
-          ROUND 1 · WEEK {week + 1} of {N_WEEKS}
+          WEEK {myWeek + 1} of {N_WEEKS}
         </div>
         <div style={{
-          fontSize: "clamp(20px, 6vw, 32px)", fontWeight: 900, color: "#fff",
-          marginBottom: 4,
+          fontSize: "clamp(22px, 7vw, 34px)", fontWeight: 900, color: "#fff",
+          marginBottom: 6,
         }}>
           Demand: {demand} cases
         </div>
@@ -494,7 +561,7 @@ export default function PlayerScreen() {
         {ev && (
           <div style={{
             background: ev.bg, border: `1px solid ${ev.border}`,
-            borderRadius: 10, padding: "10px 14px", marginBottom: 12,
+            borderRadius: 10, padding: "10px 14px", marginBottom: 10,
             maxWidth: 360, width: "100%", textAlign: "left",
           }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -507,61 +574,75 @@ export default function PlayerScreen() {
           </div>
         )}
 
-        {/* Locked confirmation */}
-        {locked && (
-          <div style={{
-            ...S.card, borderColor: "#10B98144",
-            textAlign: "center", marginTop: 8,
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
-            <div style={{ ...S.cardTitle, color: "#10B981" }}>ORDER LOCKED</div>
-            <p style={S.cardBody}>
-              You chose <strong style={{ color: "#fff" }}>{weekChoice}</strong>. Waiting for next week…
-            </p>
-          </div>
-        )}
-
         {/* Vote buttons */}
-        {!locked && (
-          <div style={{ maxWidth: 360, width: "100%", display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
-            {votes.map(opt => {
-              const KEY_COLORS = { A: "#10B981", B: "#F59E0B", C: "#EF4444", D: "#888" };
-              const kc = KEY_COLORS[opt.key];
+        <div style={{ maxWidth: 360, width: "100%", display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+          {votes.map(opt => {
+            const KEY_COLORS = { A: "#10B981", B: "#F59E0B", C: "#EF4444", D: "#888" };
+            const kc = KEY_COLORS[opt.key];
+            return (
+              <button
+                key={opt.key}
+                onClick={() => submitDecision(opt)}
+                style={{
+                  background: "#0d0d0d",
+                  border: `2px solid ${kc}44`,
+                  borderRadius: 12, padding: "14px",
+                  cursor: "pointer", textAlign: "left", width: "100%",
+                  display: "flex", alignItems: "center", gap: 12,
+                }}
+              >
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%",
+                  background: "#1a1a1a", border: `2px solid ${kc}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "monospace", fontWeight: 900, fontSize: 16,
+                  color: kc, flexShrink: 0,
+                }}>
+                  {opt.key}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 15, color: "#fff", fontFamily: "monospace" }}>
+                    {opt.label} — {opt.value} cases
+                  </div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{opt.detail}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mini leaderboard — top 3 */}
+        {topPlayers.length > 0 && (
+          <div style={{
+            maxWidth: 360, width: "100%", marginTop: 12,
+            background: "#0a0a0a", borderRadius: 10, padding: "10px 14px",
+            border: "1px solid #1a1a1a",
+          }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: "#555", letterSpacing: 2, marginBottom: 6 }}>LEADERBOARD</div>
+            {topPlayers.map((tp, idx) => {
+              const medals = ["🥇", "🥈", "🥉"];
+              const isMe = player && tp.uid === player.uid;
               return (
-                <button
-                  key={opt.key}
-                  onClick={() => submitDecision(opt)}
-                  style={{
-                    background: "#0d0d0d",
-                    border: `2px solid ${kc}44`,
-                    borderRadius: 12, padding: "16px",
-                    cursor: "pointer", textAlign: "left", width: "100%",
-                    display: "flex", alignItems: "center", gap: 14,
-                  }}
-                >
-                  <div style={{
-                    width: 40, height: 40, borderRadius: "50%",
-                    background: "#1a1a1a", border: `2px solid ${kc}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "monospace", fontWeight: 900, fontSize: 18,
-                    color: kc, flexShrink: 0,
-                  }}>
-                    {opt.key}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 900, fontSize: 16, color: "#fff", fontFamily: "monospace" }}>
-                      {opt.label} — {opt.value} cases
-                    </div>
-                    <div style={{ fontSize: 11, color: "#555", marginTop: 3 }}>{opt.detail}</div>
-                  </div>
-                </button>
+                <div key={tp.uid} style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "3px 0",
+                  color: isMe ? "#F59E0B" : "#888", fontSize: 13,
+                  fontWeight: isMe ? 900 : 400,
+                }}>
+                  <span>{medals[idx]}</span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {tp.emoji} {isMe ? "You" : tp.name}
+                  </span>
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color: tp.done ? "#10B981" : "#555" }}>
+                    {tp.done ? "✓ DONE" : `Wk ${tp.currentWeek + 1}`}
+                  </span>
+                </div>
               );
             })}
           </div>
         )}
 
-        <div style={{ ...S.footer, marginTop: 20 }}>
-          {player ? `${player.emoji} ${player.name}` : ""}
+        <div style={{ ...S.footer, marginTop: 12 }}>
+          {player ? `${player.emoji} ${player.name} · $${myCost.toFixed(0)}` : ""}
         </div>
         <style>{`@keyframes blink{50%{opacity:0}}`}</style>
       </div>
