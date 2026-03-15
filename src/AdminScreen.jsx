@@ -202,6 +202,151 @@ function TierCard({ tier, node, showAI, dirty }) {
   );
 }
 
+// ══ LOBBY SLIDES — auto-advancing educational deck ══════════════
+const LOBBY_SLIDES = [
+  {
+    icon: "🎮",
+    title: "DURIAN RUSH",
+    body: "You are the Bangsar KL retailer.\nYour job: order the right amount of\nDurian Rush cans each week.\n\nToo much = wasted stock.\nToo little = lost sales.\nFind the balance.",
+  },
+  {
+    icon: "🔗",
+    title: "4 TIERS. ONE CHAIN.",
+    flow: true,
+    body: "Every order takes time to arrive.\nDecisions you make today\naffect the chain 2-4 weeks from now.",
+  },
+  {
+    icon: "📱",
+    title: "ON YOUR PHONE",
+    body: "Each week you choose:\nA — LEAN: match demand exactly\nB — SAFE: small buffer\nC — BIG: summer is coming lah!\nD — MIN: ultra lean mode\n\nYou have 5 minutes total.\nLowest total cost wins. 🏆",
+  },
+  {
+    icon: "⚡",
+    title: "MEET DURRY",
+    image: "durry",
+    body: "An AI trained on perfect\nsupply chain data.\n\nAfter you play Round 1...\nDurry plays the same chain.\nCan you beat an AI?",
+    badge: { text: "ROUND 2 COMING", color: "#F59E0B" },
+  },
+  {
+    icon: "⚠️",
+    title: "BUT WHAT IF THE DATA IS WRONG?",
+    image: "glitch",
+    body: "95% of AI pilots fail.\nNot because of bad models.\nBecause of bad data.\n\nRound 3 will show you why.",
+    badge: { text: "GIGO INCOMING", color: "#EF4444" },
+  },
+];
+
+function LobbySlides() {
+  const [idx, setIdx] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % LOBBY_SLIDES.length);
+        setFade(true);
+      }, 300);
+    }, 8000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const slide = LOBBY_SLIDES[idx];
+
+  return (
+    <div style={{
+      background: "#0a0a0aee", border: "1px solid #222",
+      borderRadius: 16, padding: "32px 28px", width: "100%",
+      maxWidth: 460, minHeight: 420,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      textAlign: "center", position: "relative",
+      transition: "opacity 0.3s ease",
+      opacity: fade ? 1 : 0,
+    }}>
+      {/* Icon or image */}
+      {slide.image === "durry" && (
+        <img src="/durry.png" alt="Durry" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 12 }} />
+      )}
+      {slide.image === "glitch" && (
+        <img src="/durry.png" alt="Glitch" style={{
+          width: 100, height: 100, objectFit: "contain", marginBottom: 12,
+          filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
+        }} />
+      )}
+      {!slide.image && (
+        <div style={{ fontSize: 56, marginBottom: 12, lineHeight: 1 }}>{slide.icon}</div>
+      )}
+
+      {/* Title */}
+      <div style={{
+        fontFamily: "monospace", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 900,
+        background: "linear-gradient(135deg, #F59E0B, #FCD34D)",
+        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        letterSpacing: 2, marginBottom: 16, lineHeight: 1.2,
+      }}>
+        {slide.title}
+      </div>
+
+      {/* Supply chain flow diagram (slide 2) */}
+      {slide.flow && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
+          justifyContent: "center", marginBottom: 16,
+        }}>
+          {[
+            { emoji: "🌾", name: "Penang Farm" },
+            { emoji: "🏭", name: "Ipoh Factory" },
+            { emoji: "🚛", name: "Shah Alam Hub" },
+            { emoji: "🏪", name: "Bangsar KL" },
+          ].map((node, i, arr) => (
+            <span key={node.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{
+                background: "#111", border: "1px solid #333", borderRadius: 8,
+                padding: "6px 10px", fontFamily: "monospace", fontSize: 12,
+                color: "#ccc", whiteSpace: "nowrap",
+              }}>
+                {node.emoji} {node.name}
+              </span>
+              {i < arr.length - 1 && <span style={{ color: "#F59E0B", fontSize: 18, fontWeight: 900 }}>→</span>}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Body */}
+      <div style={{
+        fontFamily: "monospace", fontSize: "clamp(14px, 2vw, 17px)", color: "#bbb",
+        lineHeight: 1.8, whiteSpace: "pre-line", flex: 1,
+      }}>
+        {slide.body}
+      </div>
+
+      {/* Badge */}
+      {slide.badge && (
+        <div style={{
+          marginTop: 16,
+          background: `${slide.badge.color}22`, border: `1px solid ${slide.badge.color}66`,
+          color: slide.badge.color, borderRadius: 20, padding: "5px 16px",
+          fontFamily: "monospace", fontSize: 11, fontWeight: 900, letterSpacing: 2,
+        }}>
+          {slide.badge.text}
+        </div>
+      )}
+
+      {/* Progress dots */}
+      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+        {LOBBY_SLIDES.map((_, i) => (
+          <div key={i} style={{
+            width: i === idx ? 24 : 8, height: 8, borderRadius: 4,
+            background: i === idx ? "#F59E0B" : "#333",
+            transition: "all 0.3s ease",
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ══ ADMIN SCREEN — PROJECTOR GAME SHOW ══════════════════════════
 export default function AdminScreen() {
   const [phase, setPhaseLocal] = useState("intro");
@@ -541,7 +686,7 @@ export default function AdminScreen() {
     );
   }
 
-  // ── LOBBY ──────────────────────────────────────────────────────
+  // ── LOBBY — QR left + educational slides right ─────────────────
   if (phase === "lobby") {
     const PLAY_URL = "https://durian-rush-kl.web.app/play";
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(PLAY_URL)}&color=D97706&bgcolor=000000&format=png`;
@@ -551,60 +696,71 @@ export default function AdminScreen() {
         backgroundImage: "url(/can1.png)", backgroundSize: "cover", backgroundPosition: "center",
         position: "relative",
       }}>
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 0 }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 0 }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
           <PhaseBar />
           <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", minHeight: "85vh",
-            padding: "24px 24px", textAlign: "center",
+            flex: 1, display: "flex", gap: 0, alignItems: "stretch",
+            padding: "0", overflow: "hidden",
           }}>
+            {/* ── LEFT 60%: QR + counter ─────────────────── */}
             <div style={{
-              fontFamily: "monospace", fontSize: 18, color: "#F59E0B", letterSpacing: 6,
-              fontWeight: 700, marginBottom: 20, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+              width: "60%", display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              padding: "24px 32px", textAlign: "center",
             }}>
-              SCAN QR CODE TO JOIN
+              <div style={{
+                fontFamily: "monospace", fontSize: 18, color: "#F59E0B", letterSpacing: 6,
+                fontWeight: 700, marginBottom: 20, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+              }}>
+                SCAN QR CODE TO JOIN
+              </div>
+              <div style={{
+                background: "#000", padding: 16, borderRadius: 16, marginBottom: 16,
+                border: "3px solid #F59E0B66", boxShadow: "0 0 40px #F59E0B22",
+              }}>
+                <img src={qrSrc} alt="QR Code" style={{ width: 280, height: 280, display: "block", borderRadius: 8 }} />
+              </div>
+              <div style={{
+                fontFamily: "monospace", fontSize: 15, color: "#F59E0B", letterSpacing: 2,
+                marginBottom: 24, fontWeight: 700, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+              }}>
+                durian-rush-kl.web.app/play
+              </div>
+              <div style={{
+                fontSize: "clamp(56px, 14vw, 100px)", fontWeight: 900,
+                color: "#10B981", fontFamily: "monospace", lineHeight: 1,
+                textShadow: "0 0 40px #10B98144",
+              }}>
+                {playerCount}
+              </div>
+              <div style={{
+                fontFamily: "monospace", fontSize: 15, color: "#aaa", letterSpacing: 4, marginBottom: 24, fontWeight: 700,
+              }}>
+                PLAYERS JOINED
+              </div>
+              <button onClick={() => {
+                set(ref(db, "game/locked"), true);
+                startRoundTimer();
+                setPhase("round1");
+              }} style={{
+                background: "linear-gradient(135deg, #10B981, #059669)",
+                color: "#000", border: "none", borderRadius: 14,
+                padding: "16px 40px", fontSize: 18, fontWeight: 900,
+                cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
+                boxShadow: "0 0 30px #10B98144",
+              }}>
+                LOCK & START ROUND 1
+              </button>
             </div>
+
+            {/* ── RIGHT 40%: Auto-advancing slides ───────── */}
             <div style={{
-              background: "#000", padding: 16, borderRadius: 16, marginBottom: 16,
-              border: "3px solid #F59E0B66",
-              boxShadow: "0 0 40px #F59E0B22",
+              width: "40%", display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "24px 24px 24px 0",
             }}>
-              <img src={qrSrc} alt="QR Code" style={{ width: 300, height: 300, display: "block", borderRadius: 8 }} />
+              <LobbySlides />
             </div>
-            <div style={{
-              fontFamily: "monospace", fontSize: 16, color: "#F59E0B", letterSpacing: 2,
-              marginBottom: 28, fontWeight: 700,
-              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-            }}>
-              durian-rush-kl.web.app/play
-            </div>
-            <div style={{
-              fontSize: "clamp(64px, 16vw, 120px)", fontWeight: 900,
-              color: "#10B981", fontFamily: "monospace", lineHeight: 1,
-              textShadow: "0 0 40px #10B98144",
-            }}>
-              {playerCount}
-            </div>
-            <div style={{
-              fontFamily: "monospace", fontSize: 16, color: "#aaa", letterSpacing: 4, marginBottom: 32,
-              fontWeight: 700,
-            }}>
-              PLAYERS JOINED
-            </div>
-            <button onClick={() => {
-              set(ref(db, "game/locked"), true);
-              startRoundTimer();
-              setPhase("round1");
-            }} style={{
-              background: "linear-gradient(135deg, #10B981, #059669)",
-              color: "#000", border: "none", borderRadius: 14,
-              padding: "18px 48px", fontSize: 20, fontWeight: 900,
-              cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
-              boxShadow: "0 0 30px #10B98144",
-            }}>
-              🔒 LOCK & START ROUND 1
-            </button>
           </div>
         </div>
       </div>
