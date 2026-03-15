@@ -7,6 +7,13 @@ import {
   stepGame, newGame, chainCost, retailerCost,
 } from "./GameEngine";
 import DurryIntro from "./components/DurryIntro";
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  LineElement, PointElement, Title, Tooltip, Legend,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 // ══ PHASE SEQUENCE ══════════════════════════════════════════════
 const PHASES = ["intro","lobby","round1","durry_intro","ai_running","gigo_reveal","ai_dirty","results"];
@@ -313,8 +320,12 @@ export default function AdminScreen() {
     forceEndedRef.current = false;
   };
 
+  const cleanSnaps = useRef([]);
+  const dirtySnaps = useRef([]);
+
   const startAIGood = () => {
     setAiRunning(true);
+    cleanSnaps.current = [];
     let g = newGame();
     let w = 0;
     const tick = () => {
@@ -324,15 +335,22 @@ export default function AdminScreen() {
         return;
       }
       g = stepGame(g, 0, "ai_clean");
+      cleanSnaps.current.push({
+        week: w + 1, demand: DEMAND[w],
+        order: g.tiers[0]._order, inventory: g.tiers[0].inventory,
+        backlog: g.tiers[0].backlog, cost: retailerCost(g),
+        reasoning: g.tiers[0].aiReasoning,
+      });
       setAiGoodGame({...g});
       w++;
-      aiTimer.current = setTimeout(tick, 800);
+      aiTimer.current = setTimeout(tick, 400);
     };
     tick();
   };
 
   const startAIDirty = () => {
     setAiRunning(true);
+    dirtySnaps.current = [];
     let g = newGame();
     let w = 0;
     const tick = () => {
@@ -342,9 +360,15 @@ export default function AdminScreen() {
         return;
       }
       g = stepGame(g, 0, "ai_dirty");
+      dirtySnaps.current.push({
+        week: w + 1, demand: DEMAND[w],
+        order: g.tiers[0]._order, inventory: g.tiers[0].inventory,
+        backlog: g.tiers[0].backlog, cost: retailerCost(g),
+        reasoning: g.tiers[0].aiReasoning,
+      });
       setAiDirtyGame({...g});
       w++;
-      aiTimer.current = setTimeout(tick, 800);
+      aiTimer.current = setTimeout(tick, 400);
     };
     tick();
   };
@@ -827,64 +851,214 @@ export default function AdminScreen() {
     );
   }
 
-  // ── AI RUNNING (CLEAN) ─────────────────────────────────────────
+  // ── AI RUNNING (CLEAN) — Fast playback → Strategy chart ────────
   if (phase === "ai_running") {
     const AG = aiGoodGame ?? newGame();
+    const snaps = cleanSnaps.current;
+    const currentSnap = snaps.length > 0 ? snaps[snaps.length - 1] : null;
+
+    // During playback: big flashing week card
+    if (aiRunning) {
+      return (
+        <div style={{
+          minHeight: "100vh", background: "#050505", color: "#fff",
+          fontFamily: "system-ui, sans-serif",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          position: "relative",
+        }}>
+          <PhaseBar />
+          <div style={{ position: "absolute", top: 24, left: 0, right: 0, textAlign: "center" }}>
+            <RoundBadge round="ROUND 2 · DURRY · CLEAN DATA" color="#10B981" />
+          </div>
+          <img src="/durry.png" alt="Durry" style={{ width: 120, height: 120, objectFit: "contain", marginBottom: 16, opacity: 0.8 }} />
+          <div style={{
+            fontFamily: "monospace", fontSize: "clamp(80px, 20vw, 160px)", fontWeight: 900,
+            color: "#F59E0B", lineHeight: 1, textShadow: "0 0 60px #F59E0B44",
+            animation: "weekPulse 0.4s ease-out",
+          }}>
+            W{AG.week}
+          </div>
+          {currentSnap && (
+            <div style={{ display: "flex", gap: 40, marginTop: 20 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>ORDERED</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#10B981" }}>{currentSnap.order}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>DEMAND</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#888" }}>{currentSnap.demand}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>COST</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#F59E0B" }}>${currentSnap.cost}</div>
+              </div>
+            </div>
+          )}
+          <style>{`@keyframes weekPulse{0%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
+        </div>
+      );
+    }
+
+    // After playback: strategy chart
+    const cleanWhys = [
+      "Pipeline full — draining buffer",
+      "Stable signal, coast on stock",
+      "Stock lean — match demand exactly",
+      "Spike ahead — demand sensing kicks in",
+      "Peak demand — full coverage ordered",
+      "Past peak — controlled scale down",
+      "Demand normalizing — lean orders",
+      "Steady state — match baseline",
+      "Baseline demand — stay the course",
+      "Final week — lean finish",
+    ];
+
+    const chartData = {
+      labels: snaps.map(s => `W${s.week}`),
+      datasets: [
+        {
+          label: "Durry's Order",
+          data: snaps.map(s => s.order),
+          backgroundColor: "#F59E0B",
+          borderRadius: 4,
+          barPercentage: 0.4,
+          categoryPercentage: 0.8,
+          order: 2,
+        },
+        {
+          label: "Actual Demand",
+          data: snaps.map(s => s.demand),
+          backgroundColor: "#333",
+          borderRadius: 4,
+          barPercentage: 0.4,
+          categoryPercentage: 0.8,
+          order: 3,
+        },
+        {
+          type: "line",
+          label: "Inventory",
+          data: snaps.map(s => s.inventory),
+          borderColor: "#10B981",
+          backgroundColor: "#10B98133",
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: "#10B981",
+          tension: 0.3,
+          fill: true,
+          order: 1,
+        },
+      ],
+    };
+
+    const chartOpts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#888", font: { family: "monospace", size: 11 } } },
+        title: { display: false },
+      },
+      scales: {
+        x: { ticks: { color: "#888", font: { family: "monospace" } }, grid: { color: "#1a1a1a" } },
+        y: { ticks: { color: "#888", font: { family: "monospace" } }, grid: { color: "#1a1a1a" }, beginAtZero: true },
+      },
+    };
+
     return (
       <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
         <PhaseBar />
-        <div style={{ background: "#0a0a0a", borderBottom: "1px solid #10B98122", padding: "10px 16px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <RoundBadge round={`ROUND 2 · AI CLEAN${aiRunning ? " · ⚡ COMPUTING…" : aiGoodDone ? " · DONE" : ""}`} color="#10B981" />
-              <CostMeter cost={retailerCost(AG)} color="#10B981" />
+        <div style={{ padding: "16px 24px", maxWidth: 1000, margin: "0 auto" }}>
+          {/* Header with Durry + total */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <img src="/durry.png" alt="Durry" style={{ width: 60, height: 60, objectFit: "contain" }} />
+              <div>
+                <RoundBadge round="ROUND 2 · DURRY" color="#10B981" />
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginTop: 4 }}>CLEAN DATA · ALL 10 WEEKS</div>
+              </div>
             </div>
-            <WeekTrack week={AG.week} />
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>DURRY TOTAL</div>
+              <div style={{
+                fontFamily: "monospace", fontSize: "clamp(36px, 8vw, 64px)", fontWeight: 900,
+                color: "#F59E0B", lineHeight: 1, textShadow: "0 0 30px #F59E0B55",
+              }}>
+                ${retailerCost(AG)}
+              </div>
+            </div>
           </div>
-        </div>
-        <div style={{ padding: "14px 16px", maxWidth: 900, margin: "0 auto" }}>
-          {aiRunning && (
-            <div style={{ background: "#10B98111", border: "1px solid #10B98133", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontFamily: "monospace", fontSize: 12, color: "#10B981" }}>
-              ⚡ AI processing — EMA smoothing, pipeline tracking…
-            </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-            <button onClick={() => setShowAI(!showAI)} style={{
-              background: showAI ? "#10B98122" : "transparent",
-              border: `1px solid ${showAI ? "#10B981" : "#222"}`, color: showAI ? "#10B981" : "#444",
-              borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontFamily: "monospace", fontSize: 10,
+
+          {/* Chart */}
+          <div style={{
+            background: "#0a0a0a", border: "1px solid #222", borderRadius: 12,
+            padding: 16, marginBottom: 16, height: 260,
+          }}>
+            <Bar data={chartData} options={chartOpts} />
+          </div>
+
+          {/* Week-by-week logic table */}
+          <div style={{
+            background: "#0a0a0a", border: "1px solid #222", borderRadius: 12,
+            padding: "12px 16px", marginBottom: 16, overflowX: "auto",
+          }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "monospace", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #333" }}>
+                  {["Week", "Demand", "Durry Ordered", "Why"].map(h => (
+                    <th key={h} style={{ padding: "8px 6px", textAlign: "left", color: "#555", fontWeight: 700, fontSize: 10, letterSpacing: 1 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {snaps.map((s, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #111" }}>
+                    <td style={{ padding: "6px", color: "#888" }}>{s.week}</td>
+                    <td style={{ padding: "6px", color: "#666" }}>{s.demand}</td>
+                    <td style={{ padding: "6px", color: "#F59E0B", fontWeight: 900 }}>{s.order}</td>
+                    <td style={{ padding: "6px", color: "#10B981", fontSize: 11 }}>{cleanWhys[i] ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Durry quote */}
+          <div style={{
+            background: "#10B98108", border: "1px solid #10B98122", borderRadius: 12,
+            padding: "20px 24px", marginBottom: 20, textAlign: "center",
+          }}>
+            <img src="/durry.png" alt="Durry" style={{ width: 48, height: 48, objectFit: "contain", marginBottom: 8, opacity: 0.7 }} />
+            <div style={{
+              fontFamily: "monospace", fontSize: 15, color: "#10B981",
+              lineHeight: 2, fontWeight: 700, fontStyle: "italic",
             }}>
-              {showAI ? "▾ HIDE AI LOGIC" : "▸ SHOW AI LOGIC"}
+              "I read the demand signal 2 weeks ahead.<br />
+              You reacted. I anticipated.<br />
+              Clean data makes the difference."
+            </div>
+          </div>
+
+          {/* Comparison + Next button */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 20, flexWrap: "wrap" }}>
+            <CostMeter cost={avgPlayerCost} color="#EF4444" label="HUMAN AVG" />
+            <CostMeter cost={retailerCost(AG)} color="#10B981" label="DURRY" />
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#555", letterSpacing: 2, fontFamily: "monospace", marginBottom: 2 }}>SAVINGS</div>
+              <div style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 900, color: "#10B981", fontFamily: "monospace" }}>
+                {avgPlayerCost > 0 ? (((avgPlayerCost - retailerCost(AG)) / avgPlayerCost) * 100).toFixed(0) : 0}%
+              </div>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <button onClick={() => setPhase("gigo_reveal")} style={{
+              background: "linear-gradient(135deg, #EF4444, #B91C1C)", color: "#fff", border: "none", borderRadius: 14,
+              padding: "18px 48px", fontSize: 18, fontWeight: 900, cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
+              boxShadow: "0 0 30px #EF444444",
+            }}>
+              NOW MEET GLITCH →
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-            {NODES.map((n, i) => <TierCard key={n.id} tier={AG.tiers[i]} node={n} showAI={showAI} dirty={false} />)}
-          </div>
-          {aiGoodDone && !aiRunning && (
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ background: "#10B98111", border: "1px solid #10B98133", borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: "#10B981", letterSpacing: 3, marginBottom: 8 }}>RESULT</div>
-                <div style={{ display: "flex", justifyContent: "center", gap: 40, flexWrap: "wrap" }}>
-                  <CostMeter cost={avgPlayerCost} color="#EF4444" label="👤 HUMAN AVG" />
-                  <CostMeter cost={retailerCost(AG)} color="#10B981" label="⚡ AI CLEAN" />
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#555", letterSpacing: 2, fontFamily: "monospace", marginBottom: 2 }}>SAVINGS</div>
-                    <div style={{ fontSize: "clamp(28px,6vw,52px)", fontWeight: 900, color: "#10B981", fontFamily: "monospace" }}>
-                      {avgPlayerCost > 0 ? (((avgPlayerCost - retailerCost(AG)) / avgPlayerCost) * 100).toFixed(0) : 0}% less
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button onClick={() => setPhase("gigo_reveal")} style={{
-                background: "linear-gradient(135deg, #EF4444, #B91C1C)", color: "#fff", border: "none", borderRadius: 14,
-                padding: "16px 36px", fontSize: 16, fontWeight: 900, cursor: "pointer", letterSpacing: 2, fontFamily: "monospace",
-              }}>
-                ⚠️ CORRUPT THE DATA
-              </button>
-            </div>
-          )}
         </div>
-        <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
       </div>
     );
   }
@@ -935,37 +1109,282 @@ export default function AdminScreen() {
     );
   }
 
-  // ── AI DIRTY ───────────────────────────────────────────────────
+  // ── AI DIRTY — Fast playback → Failure chart ──────────────────
   if (phase === "ai_dirty") {
     const DG = aiDirtyGame ?? newGame();
+    const dSnaps = dirtySnaps.current;
+    const currentSnap = dSnaps.length > 0 ? dSnaps[dSnaps.length - 1] : null;
+    const isErrorWeek = currentSnap && currentSnap.week >= 4 && currentSnap.week <= 6;
+
+    // During playback: fast flashing with red theme
+    if (aiRunning) {
+      return (
+        <div style={{
+          minHeight: "100vh", background: "#050505", color: "#fff",
+          fontFamily: "system-ui, sans-serif",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          position: "relative",
+        }}>
+          <PhaseBar />
+          <div style={{ position: "absolute", top: 24, left: 0, right: 0, textAlign: "center" }}>
+            <RoundBadge round="ROUND 3 · GLITCH · CORRUPTED DATA" color="#EF4444" />
+          </div>
+          <img
+            src="/durry.png" alt="Glitch"
+            style={{
+              width: 120, height: 120, objectFit: "contain", marginBottom: 16,
+              filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
+              animation: "glitchShake 0.3s infinite",
+            }}
+          />
+          {isErrorWeek && (
+            <div style={{
+              position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)",
+              background: "#EF4444", color: "#fff", fontFamily: "monospace", fontWeight: 900,
+              fontSize: 18, padding: "8px 24px", borderRadius: 6, letterSpacing: 3,
+              animation: "flashError 0.5s ease-out",
+            }}>
+              DATA ERROR
+            </div>
+          )}
+          <div style={{
+            fontFamily: "monospace", fontSize: "clamp(80px, 20vw, 160px)", fontWeight: 900,
+            color: "#EF4444", lineHeight: 1, textShadow: "0 0 60px #EF444444",
+            animation: "weekPulse 0.4s ease-out",
+          }}>
+            W{DG.week}
+          </div>
+          {currentSnap && (
+            <div style={{ display: "flex", gap: 40, marginTop: 20 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>ORDERED</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#EF4444" }}>{currentSnap.order}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>DEMAND</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#888" }}>{currentSnap.demand}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>COST</div>
+                <div style={{ fontFamily: "monospace", fontSize: 36, fontWeight: 900, color: "#EF4444" }}>${currentSnap.cost}</div>
+              </div>
+            </div>
+          )}
+          <style>{`
+            @keyframes weekPulse{0%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:1}}
+            @keyframes glitchShake{0%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-1px,3px)}100%{transform:translate(0,0)}}
+            @keyframes flashError{0%{opacity:0;transform:translateX(-50%) scale(1.5)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+          `}</style>
+        </div>
+      );
+    }
+
+    // After playback: failure chart
+    const dirtyErrors = [
+      "Phantom stock masks real depletion",
+      "SAP says 23 — actual 8. Coasting blind",
+      "Inventory hits 4, SAP still says 19",
+      "SAP says 15 in stock — actual 0. Missed demand spike",
+      "Finally sensing gap — too late, backlog exploding",
+      "Panic reorder — demand 18, backlog already deep",
+      "Overcorrecting — demand already falling",
+      "Still catching up from the hole",
+      "Stale demand reads 10 — actual demand 4",
+      "Damage done — $240 total",
+    ];
+
+    const dirtyChartData = {
+      labels: dSnaps.map(s => `W${s.week}`),
+      datasets: [
+        {
+          label: "Glitch's Order",
+          data: dSnaps.map(s => s.order),
+          backgroundColor: dSnaps.map(s => s.week >= 4 && s.week <= 6 ? "#EF4444" : "#EF444488"),
+          borderRadius: 4,
+          barPercentage: 0.3,
+          categoryPercentage: 0.8,
+          order: 2,
+        },
+        {
+          label: "Actual Demand",
+          data: dSnaps.map(s => s.demand),
+          backgroundColor: "#333",
+          borderRadius: 4,
+          barPercentage: 0.3,
+          categoryPercentage: 0.8,
+          order: 3,
+        },
+        {
+          label: "SAP Thought (Smoothed)",
+          data: dSnaps.map(s => s.reasoning?.smooth ?? 0),
+          backgroundColor: "transparent",
+          borderColor: "#F59E0B",
+          borderWidth: 2,
+          borderDash: [6, 4],
+          type: "line",
+          pointRadius: 4,
+          pointBackgroundColor: "#F59E0B",
+          tension: 0.3,
+          order: 1,
+        },
+        {
+          type: "line",
+          label: "Real Inventory",
+          data: dSnaps.map(s => s.inventory),
+          borderColor: "#EF4444",
+          backgroundColor: "#EF444422",
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: "#EF4444",
+          tension: 0.3,
+          fill: true,
+          order: 0,
+        },
+      ],
+    };
+
+    const dirtyChartOpts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#888", font: { family: "monospace", size: 11 } } },
+      },
+      scales: {
+        x: { ticks: { color: "#888", font: { family: "monospace" } }, grid: { color: "#1a1a1a" } },
+        y: { ticks: { color: "#888", font: { family: "monospace" } }, grid: { color: "#1a1a1a" }, beginAtZero: true },
+      },
+    };
+
     return (
       <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
         <PhaseBar />
-        <div style={{ background: "#0a0a0a", borderBottom: "1px solid #EF444422", padding: "10px 16px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <RoundBadge round={`☠️ ROUND 3 · AI DIRTY${aiRunning ? " · COMPUTING…" : ""}`} color="#EF4444" />
-              <CostMeter cost={retailerCost(DG)} color="#EF4444" />
+        <div style={{ padding: "16px 24px", maxWidth: 1000, margin: "0 auto" }}>
+          {/* Header with Glitch + total */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <img
+                src="/durry.png" alt="Glitch"
+                style={{
+                  width: 60, height: 60, objectFit: "contain",
+                  filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
+                  animation: "glitchShake 0.3s infinite",
+                }}
+              />
+              <div>
+                <RoundBadge round="ROUND 3 · GLITCH" color="#EF4444" />
+                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginTop: 4 }}>CORRUPTED DATA · ALL 10 WEEKS</div>
+              </div>
             </div>
-            <WeekTrack week={DG.week} />
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555", letterSpacing: 2 }}>GLITCH TOTAL</div>
+              <div style={{
+                fontFamily: "monospace", fontSize: "clamp(36px, 8vw, 64px)", fontWeight: 900,
+                color: "#EF4444", lineHeight: 1, textShadow: "0 0 30px #EF444455",
+              }}>
+                ${retailerCost(DG)}
+              </div>
+            </div>
           </div>
-        </div>
-        <div style={{ padding: "14px 16px", maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ background: "#EF44440a", border: "1px solid #EF444422", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontFamily: "monospace", fontSize: 10, color: "#EF4444", display: "flex", gap: 18, flexWrap: "wrap" }}>
-            <span>⚠ SAP: PHANTOM +15 UNITS</span><span>⚠ LEAD TIME: -1WK</span><span>⚠ DEMAND: 3WKS STALE</span>
+
+          {/* SAP bugs banner */}
+          <div style={{
+            background: "#EF44440a", border: "1px solid #EF444422", borderRadius: 10,
+            padding: "10px 14px", marginBottom: 16, fontFamily: "monospace", fontSize: 11,
+            color: "#EF4444", display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "center",
+          }}>
+            <span>👻 PHANTOM +15 UNITS</span>
+            <span>🌉 LEAD TIME -1WK</span>
+            <span>⏳ DEMAND 3WKS STALE</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-            {NODES.map((n, i) => <TierCard key={n.id} tier={DG.tiers[i]} node={n} showAI={true} dirty={true} />)}
+
+          {/* Chart */}
+          <div style={{
+            background: "#0a0a0a", border: "1px solid #EF444422", borderRadius: 12,
+            padding: 16, marginBottom: 16, height: 260,
+          }}>
+            <Bar data={dirtyChartData} options={dirtyChartOpts} />
           </div>
-          {dirtyDone && !aiRunning && (
-            <button onClick={() => setPhase("results")} style={{
-              width: "100%", background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#000", border: "none", borderRadius: 14,
-              padding: "18px", fontSize: 16, fontWeight: 900, cursor: "pointer", letterSpacing: 2, fontFamily: "monospace",
+
+          {/* Week-by-week error table */}
+          <div style={{
+            background: "#0a0a0a", border: "1px solid #EF444422", borderRadius: 12,
+            padding: "12px 16px", marginBottom: 16, overflowX: "auto",
+          }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "monospace", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #333" }}>
+                  {["Week", "Real Demand", "SAP Smoothed", "Glitch Ordered", "Error"].map(h => (
+                    <th key={h} style={{ padding: "8px 6px", textAlign: "left", color: "#555", fontWeight: 700, fontSize: 10, letterSpacing: 1 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dSnaps.map((s, i) => {
+                  const isErr = s.week >= 4 && s.week <= 8;
+                  return (
+                    <tr key={i} style={{
+                      borderBottom: "1px solid #111",
+                      background: isErr ? "#EF44440a" : "transparent",
+                    }}>
+                      <td style={{ padding: "6px", color: isErr ? "#EF4444" : "#888" }}>
+                        {s.week} {isErr ? "🔴" : ""}
+                      </td>
+                      <td style={{ padding: "6px", color: "#666" }}>{s.demand}</td>
+                      <td style={{ padding: "6px", color: "#F59E0B" }}>{s.reasoning?.smooth ?? "—"}</td>
+                      <td style={{ padding: "6px", color: "#EF4444", fontWeight: 900 }}>{s.order}</td>
+                      <td style={{ padding: "6px", color: isErr ? "#EF4444" : "#666", fontSize: 11 }}>{dirtyErrors[i] ?? ""}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Glitch quote */}
+          <div style={{
+            background: "#EF44440a", border: "1px solid #EF444422", borderRadius: 12,
+            padding: "20px 24px", marginBottom: 20, textAlign: "center",
+          }}>
+            <img
+              src="/durry.png" alt="Glitch"
+              style={{
+                width: 48, height: 48, objectFit: "contain", marginBottom: 8,
+                filter: "hue-rotate(120deg) saturate(300%) brightness(0.8)",
+                animation: "glitchShake 0.3s infinite",
+              }}
+            />
+            <div style={{
+              fontFamily: "monospace", fontSize: 15, color: "#EF4444",
+              lineHeight: 2, fontWeight: 700, fontStyle: "italic",
+              animation: "glitchText 3s infinite",
             }}>
-              🏆 SEE FINAL RESULTS →
+              "The model was perfect.<br />
+              The data was garbage.<br />
+              GIGO: Garbage In, Garbage Out."
+            </div>
+          </div>
+
+          {/* 3-way comparison + button */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 20, flexWrap: "wrap" }}>
+            <CostMeter cost={retailerCost(savedGood ?? aiGoodGame)} color="#10B981" label="DURRY (CLEAN)" />
+            <CostMeter cost={avgPlayerCost} color="#F59E0B" label="HUMAN AVG" />
+            <CostMeter cost={retailerCost(DG)} color="#EF4444" label="GLITCH (DIRTY)" />
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <button onClick={() => setPhase("results")} style={{
+              background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#000", border: "none", borderRadius: 14,
+              padding: "18px 48px", fontSize: 18, fontWeight: 900, cursor: "pointer", letterSpacing: 3, fontFamily: "monospace",
+              boxShadow: "0 0 30px #F59E0B44",
+            }}>
+              SEE FINAL RESULTS →
             </button>
-          )}
+          </div>
         </div>
+        <style>{`
+          @keyframes glitchShake{0%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-1px,3px)}100%{transform:translate(0,0)}}
+          @keyframes glitchText{0%,90%,100%{transform:none;opacity:1}92%{transform:translate(-2px,1px) skewX(-1deg);opacity:0.8}94%{transform:translate(2px,-1px) skewX(1deg);opacity:0.9}96%{transform:none;opacity:1}}
+        `}</style>
       </div>
     );
   }
@@ -1034,7 +1453,7 @@ export default function AdminScreen() {
           </div>
           <div style={{ textAlign: "center", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={() => {
-              const lb = buildLeaderboard(playersData, week);
+              const lb = buildLeaderboard(playersData);
               const escCSV = (v) => {
                 const s = String(v ?? "");
                 return s.includes(",") || s.includes('"') || s.includes("\n")
