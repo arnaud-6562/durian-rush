@@ -733,7 +733,7 @@ export default function AdminScreen() {
 
   // ── LOBBY — QR left + educational slides right ─────────────────
   if (phase === "lobby") {
-    const PLAY_URL = "https://durian-rush-kl.web.app/play";
+    const PLAY_URL = "https://play.tetrixx.app/play";
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(PLAY_URL)}&color=D97706&bgcolor=000000&format=png`;
     return (
       <div style={{
@@ -770,7 +770,7 @@ export default function AdminScreen() {
                 fontFamily: "monospace", fontSize: 15, color: "#F59E0B", letterSpacing: 2,
                 marginBottom: 24, fontWeight: 700, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
               }}>
-                durian-rush-kl.web.app/play
+                play.tetrixx.app/play
               </div>
               <div style={{
                 fontSize: "clamp(56px, 14vw, 100px)", fontWeight: 900,
@@ -1234,7 +1234,6 @@ export default function AdminScreen() {
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           position: "relative",
         }}>
-          <PhaseBar />
           <div style={{ position: "absolute", top: 24, left: 0, right: 0, textAlign: "center" }}>
             <RoundBadge round="ROUND 2 · DURRY · CLEAN DATA" color="#10B981" />
           </div>
@@ -1262,6 +1261,16 @@ export default function AdminScreen() {
               </div>
             </div>
           )}
+          {/* Running total bottom-right */}
+          <div style={{
+            position: "absolute", bottom: 24, right: 32,
+            fontFamily: "monospace", textAlign: "right",
+          }}>
+            <div style={{ fontSize: 10, color: "#555", letterSpacing: 2 }}>TOTAL COST</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "#F59E0B", textShadow: "0 0 20px #F59E0B33" }}>
+              ${retailerCost(AG)}
+            </div>
+          </div>
           <style>{`@keyframes weekPulse{0%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
         </div>
       );
@@ -1495,7 +1504,6 @@ export default function AdminScreen() {
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           position: "relative",
         }}>
-          <PhaseBar />
           <div style={{ position: "absolute", top: 24, left: 0, right: 0, textAlign: "center" }}>
             <RoundBadge round="ROUND 3 · GLITCH · CORRUPTED DATA" color="#EF4444" />
           </div>
@@ -1540,6 +1548,16 @@ export default function AdminScreen() {
               </div>
             </div>
           )}
+          {/* Running total bottom-right */}
+          <div style={{
+            position: "absolute", bottom: 24, right: 32,
+            fontFamily: "monospace", textAlign: "right",
+          }}>
+            <div style={{ fontSize: 10, color: "#555", letterSpacing: 2 }}>TOTAL COST</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "#EF4444", textShadow: "0 0 20px #EF444433" }}>
+              ${retailerCost(DG)}
+            </div>
+          </div>
           <style>{`
             @keyframes weekPulse{0%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:1}}
             @keyframes glitchShake{0%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-1px,3px)}100%{transform:translate(0,0)}}
