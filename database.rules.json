@@ -1,12 +1,6 @@
 {
   "rules": {
-    "game": {
-      ".read": true,
-      ".write": true
-    },
-    "players": {
-      ".read": true,
-      ".write": true
-    }
+    ".read": true,
+    ".write": true
   }
 }

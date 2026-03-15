@@ -572,12 +572,23 @@ export default function AdminScreen() {
   const timerRed = remaining > 0 && remaining < 30_000;
   const timerWarn = remaining > 0 && remaining < 60_000;
 
-  // Auto-force-end when timer hits 0
+  // Auto-force-end when timer expires — check deadline directly, not remaining
   useEffect(() => {
-    if (phase !== "round1" || !deadline) return;
-    if (remaining > 0 || forceEndedRef.current) return;
-    forceEndRound();
-  }, [remaining, phase, deadline, forceEndRound]);
+    if (phase !== "round1") return;
+    if (!deadline) return;
+    if (forceEndedRef.current) return;
+    // Set a single timeout for when the deadline actually passes
+    const ms = deadline - Date.now();
+    if (ms <= 0) {
+      // Deadline already passed (shouldn't happen normally)
+      forceEndRound();
+      return;
+    }
+    const id = setTimeout(() => {
+      if (!forceEndedRef.current) forceEndRound();
+    }, ms);
+    return () => clearTimeout(id);
+  }, [phase, deadline, forceEndRound]);
 
   // ── Phase bar ─────────────────────────────────────────────────
   const PhaseBar = () => (

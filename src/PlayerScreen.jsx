@@ -542,7 +542,9 @@ export default function PlayerScreen() {
       );
     }
 
-    const isDone = finished || forceEnded || myWeek >= N_WEEKS;
+    // Show DONE only if: player finished all weeks locally, OR admin force-ended the round
+    // Never show done on fresh round start (myWeek=0, forceEnded=false, finished=false)
+    const isDone = myWeek >= N_WEEKS || forceEnded;
     const week = Math.min(myWeek, N_WEEKS - 1);
     const demand = DEMAND[week];
     const votes = buildVotes(week, demand, 12, 12);
