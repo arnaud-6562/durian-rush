@@ -526,6 +526,8 @@ export default function AdminScreen() {
     setAiRunning(false);
     setPlayerCount(0);
     setPlayersData(null);
+    setJoinFeed([]);
+    prevPlayerUids.current = new Set();
     setPrevWeeks({});
     setFlashUids(new Set());
     forceEndedRef.current = false;
