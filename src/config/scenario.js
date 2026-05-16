@@ -69,3 +69,9 @@ export const SAP_BUGS = { phantomStock: 15, leadTimeDelta: -1, demandLag: 3 };
 
 // ── Game timing defaults (seconds) ───────────────────────────
 export const DEFAULT_WEEK_TIMER = 20;  // auto-lock per week in round 1
+
+// ── Authentication mode ───────────────────────────────────────
+// "anonymous" — name + email only, no SMS. Free tier. Recommended for classrooms.
+// "sms"       — name + email + phone OTP via Firebase Auth. Required for conferences
+//               where you need verified identities. Costs ~$0.05/SMS on Firebase Blaze.
+export const AUTH_MODE = "anonymous";

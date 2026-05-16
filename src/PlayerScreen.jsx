@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { ref, onValue, set, get } from "firebase/database";
-import { RecaptchaVerifier, signInWithPhoneNumber, signOut, onAuthStateChanged } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, signInAnonymously, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase";
 import { DEMAND, N_WEEKS, EVENTS, buildVotes, simulatePlayerCost } from "./GameEngine";
+import { AUTH_MODE } from "./config/scenario";
 
 const EMOJIS = ["🦁","🐯","🦊","🐻","🦅","🐲","🦎","🐬","🦈","🐸"];
 const randomEmoji = () => EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
@@ -273,22 +274,38 @@ export default function PlayerScreen() {
   const handleJoin = async () => {
     const trimName = name.trim();
     const trimEmail = email.trim();
-    const trimPhone = phoneNum.trim();
     if (!trimName) { setError("Enter your name"); return; }
     if (!trimEmail || !trimEmail.includes("@")) { setError("Enter a valid email"); return; }
-    if (!trimPhone || trimPhone.length < 6) { setError("Enter a valid mobile number"); return; }
-
-    const fullPhone = countryCode + trimPhone.replace(/^0+/, "");
-    formDataRef.current = { name: trimName, email: trimEmail, phone: fullPhone };
 
     setSubmitting(true);
     setError(null);
+
+    if (AUTH_MODE === "anonymous") {
+      try {
+        const cred = await signInAnonymously(auth);
+        const uid = cred.user.uid;
+        const data = { name: trimName, email: trimEmail, phone: null, joinedAt: Date.now(), emoji: randomEmoji(), verified: false };
+        await set(ref(db, `players/${uid}`), data);
+        const playerObj = { uid, ...data };
+        sessionStorage.setItem("dr_player", JSON.stringify(playerObj));
+        setPlayer(playerObj);
+      } catch (err) {
+        console.error("Join error:", err);
+        setError("Something went wrong — try again");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // SMS mode
+    const trimPhone = phoneNum.trim();
+    if (!trimPhone || trimPhone.length < 6) { setError("Enter a valid mobile number"); setSubmitting(false); return; }
+    const fullPhone = countryCode + trimPhone.replace(/^0+/, "");
+    formDataRef.current = { name: trimName, email: trimEmail, phone: fullPhone };
     try {
-      // Setup invisible recaptcha
       if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-        });
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
       }
       const result = await signInWithPhoneNumber(auth, fullPhone, window.recaptchaVerifier);
       setConfirmResult(result);
@@ -296,7 +313,6 @@ export default function PlayerScreen() {
       setResendTimer(30);
     } catch (err) {
       console.error("SMS error:", err);
-      // If SMS fails, still allow registration (event fallback)
       setError("SMS failed — you can still join without verification");
       formDataRef.current = { name: trimName, email: trimEmail, phone: fullPhone };
       setOtpStep(true);
@@ -514,53 +530,57 @@ export default function PlayerScreen() {
                 autoComplete="email"
                 maxLength={80}
               />
-              {/* Phone with country code */}
-              <div style={{ display: "flex", gap: 8 }}>
-                <select
-                  value={countryCode}
-                  onChange={e => setCountryCode(e.target.value)}
-                  style={{
-                    ...S.input,
-                    width: 110,
-                    flexShrink: 0,
-                    padding: "14px 8px",
-                    fontSize: 14,
-                    appearance: "none",
-                    WebkitAppearance: "none",
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 8px center",
-                    paddingRight: 24,
-                  }}
-                >
-                  {COUNTRY_CODES.map(cc => (
-                    <option key={cc.code} value={cc.code}>{cc.label}</option>
-                  ))}
-                </select>
-                <input
-                  type="tel"
-                  placeholder="12 345 6789"
-                  value={phoneNum}
-                  onChange={e => setPhoneNum(e.target.value)}
-                  style={{ ...S.input, flex: 1 }}
-                  autoComplete="tel"
-                  maxLength={15}
-                  onKeyDown={e => e.key === "Enter" && handleJoin()}
-                />
-              </div>
+              {/* Phone with country code — SMS mode only */}
+              {AUTH_MODE === "sms" && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <select
+                    value={countryCode}
+                    onChange={e => setCountryCode(e.target.value)}
+                    style={{
+                      ...S.input,
+                      width: 110,
+                      flexShrink: 0,
+                      padding: "14px 8px",
+                      fontSize: 14,
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 8px center",
+                      paddingRight: 24,
+                    }}
+                  >
+                    {COUNTRY_CODES.map(cc => (
+                      <option key={cc.code} value={cc.code}>{cc.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder="12 345 6789"
+                    value={phoneNum}
+                    onChange={e => setPhoneNum(e.target.value)}
+                    style={{ ...S.input, flex: 1 }}
+                    autoComplete="tel"
+                    maxLength={15}
+                    onKeyDown={e => e.key === "Enter" && handleJoin()}
+                  />
+                </div>
+              )}
               {error && <div style={S.errorText}>{error}</div>}
               <button
                 onClick={handleJoin}
                 disabled={submitting}
                 style={{ ...S.goldBtn, opacity: submitting ? 0.5 : 1 }}
               >
-                {submitting ? "SENDING CODE…" : "🎮 JOIN"}
+                {submitting
+                  ? (AUTH_MODE === "sms" ? "SENDING CODE…" : "JOINING…")
+                  : "🎮 JOIN"}
               </button>
             </div>
           </div>
         </div>
         <div style={S.footerAbsolute}>Powered by TetriXX</div>
-        <div id="recaptcha-container" />
+        {AUTH_MODE === "sms" && <div id="recaptcha-container" />}
       </div>
     );
   }
