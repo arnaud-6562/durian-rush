@@ -254,3 +254,13 @@ Durian Rush was created by **TetriXX** — an AI-native intelligence company for
 | Freight Cost & Performance Intelligence | [fcpi.tetrixx.ai](https://fcpi.tetrixx.ai) |
 
 If this game sparked questions about how AI and data quality play out in real supply chain operations — that's exactly what we work on. Reach out.
+
+---
+
+## Acknowledgements
+
+Durian Rush premiered at CargoNOW 2026, Kuala Lumpur, with the support and patronage of:
+
+- **CargoNOW** — [cargonow.world](https://cargonow.world/) · [LinkedIn](https://www.linkedin.com/company/cargonow-world/posts/?feedView=all)
+- **The Logistics & Supply Chain Management Society (LSCMS)** — [lscms.org](https://lscms.org/) · [LinkedIn](https://www.linkedin.com/company/logistics-&-supply-chain-management-society/)
+- **LogiSYM** — [logisym.org](https://logisym.org/)

@@ -163,3 +163,18 @@ MIT — free to use, adapt, and run in any academic or professional context.
 [TetriXX](https://tetrixx.ai) — Automating complexity, delivering clarity for a sustainable future.
 
 Premiered at **CargoNOW 2026, Kuala Lumpur** on May 15th, 2026 with ~150 supply chain practitioners.
+
+---
+
+## Acknowledgements
+
+Durian Rush was made possible by the support and patronage of:
+
+**CargoNOW** — the platform that brought the game to its premiere audience in Kuala Lumpur.
+[cargonow.world](https://cargonow.world/) · [LinkedIn](https://www.linkedin.com/company/cargonow-world/posts/?feedView=all)
+
+**The Logistics & Supply Chain Management Society (LSCMS)** — for their patronage and commitment to advancing supply chain education.
+[lscms.org](https://lscms.org/) · [LinkedIn](https://www.linkedin.com/company/logistics-&-supply-chain-management-society/)
+
+**LogiSYM** — for their support in bringing this initiative to the supply chain community.
+[logisym.org](https://logisym.org/)
