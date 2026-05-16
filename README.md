@@ -1,101 +1,169 @@
-# Durian Rush KL
+# Durian Rush
 
-Live interactive supply chain game for **CargoNOW 2025, Kuala Lumpur**.
+A live multiplayer supply chain game for keynotes and classrooms.
 
-~150 supply chain practitioners play on their phones against **Durry**, an AI opponent. The game demonstrates that AI beats humans in supply chain decisions — and that data quality is everything.
-
-## How it works
-
-| Round | What happens | Duration |
-|-------|-------------|----------|
-| **Lobby** | Players scan QR code, register with SMS OTP | 5 min |
-| **Round 1** | Humans play 10 weeks of ordering decisions | 5 min |
-| **Round 2** | Durry (AI) plays with clean data | ~90 sec |
-| **GIGO Reveal** | SAP data gets corrupted | 10 sec |
-| **Round 3** | Durry plays with dirty data — costs explode | ~60 sec |
-| **Results** | 3-way podium: AI Clean vs Best Human vs AI Dirty | 2 min |
+~150 players on their phones compete against **Durry**, an AI opponent, across three rounds of inventory ordering decisions. The game demonstrates the bullwhip effect, demand sensing, and — through a simulated SAP data corruption — why AI fails when data quality fails.
 
 **Core message:** AI doesn't fail because of bad models. It fails because of bad data.
 
-## URLs
+---
 
-| Environment | URL |
-|------------|-----|
-| Admin (projector) | https://durian-rush-kl.web.app/admin |
-| Player (phones) | https://play.tetrixx.app/play |
-| Demo (single-player) | https://durian-rush-kl.web.app |
+## Live demo
+
+| URL | Purpose |
+| --- | ------- |
+| [durian-rush-kl.web.app](https://durian-rush-kl.web.app) | Single-player demo — no Firebase required |
+| [/admin](https://durian-rush-kl.web.app/admin) | Presenter controls (PIN-gated) |
+| [/play](https://durian-rush-kl.web.app/play) | Player entry point (mobile) |
+
+---
+
+## How the game works
+
+### The supply chain
+
+```text
+🌾 Penang Farm  →  ⚙️ Ipoh Factory  →  🚛 Shah Alam Hub  →  🏪 KL Retailer
+   (3 wk lead)        (2 wk lead)           (1 wk lead)        ← players
+```
+
+Players control the KL Retailer. Each week they see demand and choose an order quantity (A/B/C/D). Holding cost: $0.50/case/week. Stockout penalty: $3.00/case/week. Lowest total cost wins.
+
+### Three rounds
+
+| Round | Who plays | Data |
+| ----- | --------- | ---- |
+| **Round 1** | Humans — 10 weeks, 20 seconds per week | Real demand |
+| **Round 2** | Durry (AI) — all 10 weeks in ~90 seconds | Clean data |
+| **Round 3** | Durry (AI) — all 10 weeks in ~60 seconds | Corrupted SAP data |
+
+Round 3 uses three injected data bugs: phantom inventory (+15 cases), stale demand (3 weeks old), and a lead time error (-1 week). Durry's cost explodes — often worse than every human in the room.
+
+### The GIGO reveal
+
+Between Round 2 and Round 3, the screen shows a simulated SAP data corruption alert. It's never announced in advance. The silence after Round 3's result is the moment the lesson lands.
+
+---
+
+## Quick start
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) 18+
+- [Firebase CLI](https://firebase.google.com/docs/cli): `npm install -g firebase-tools`
+- A Firebase project with Realtime Database and Phone Auth enabled
+
+See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase setup.
+
+### Install and run locally
+
+```bash
+git clone https://github.com/arnaud-6562/durian-rush-kl.git
+cd durian-rush-kl
+npm install
+cp .env.example .env   # fill in your Firebase values
+npm run dev
+```
+
+Open `http://localhost:5173` for the single-player demo.
+Open `http://localhost:5173/admin` for presenter controls.
+Open `http://localhost:5173/play` on a phone for the player view.
+
+### Deploy
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+---
+
+## Running the game
+
+See [docs/facilitator-guide.md](docs/facilitator-guide.md) for:
+
+- **45-minute keynote format** — timing, what to say at each phase, emergency playbook
+- **90-minute classroom format** — extended timer, debrief before Durry, discussion structure
+- **Day-of setup checklist**
+
+See [docs/debrief-guide.md](docs/debrief-guide.md) for discussion questions and learning outcomes.
+
+---
+
+## Localizing your scenario
+
+The game is built around durian supply in west coast Malaysia, but the mechanics work for any product and region. All scenario-specific content lives in one file: [`src/config/scenario.js`](src/config/scenario.js).
+
+To adapt the game:
+
+1. **Change the supply chain** — edit `NODES` with your tier names, cities, and icons
+2. **Change the demand curve** — edit `DEMAND` (10-week array, units/week)
+3. **Change the disruption events** — edit `EVENTS` (week number → title, body, color)
+4. **Change the cost structure** — edit `HOLD` (holding cost) and `BACK` (stockout penalty)
+5. **Change the lead times** — edit `LEAD_TIMES` (one value per tier, weeks)
+6. **Change the data bugs** — edit `SAP_BUGS` for different GIGO magnitudes
+7. **Set your player URL** — set `VITE_PLAY_URL` in your `.env`
+8. **Swap Durry assets** — replace `/public/durry_intro.mp4` and `/public/durry_*.jpg` with your own character
+
+The TetriXX branding in the results screen is intentional — this game is a showcase of what data quality intelligence looks like in practice. You're welcome to replace it with your own institution's branding.
+
+---
+
+## Project structure
+
+```text
+src/
+  config/
+    scenario.js          — all game parameters (demand, events, costs, nodes)
+  App.jsx                — router: /admin, /play, / (demo)
+  AdminScreen.jsx        — projector view, 8 phases, presenter controls
+  PlayerScreen.jsx       — mobile: register → OTP → play → watch → results
+  GameEngine.js          — pure functions: AI logic, bullwhip, costs
+  firebase.js            — Firebase init (reads from .env)
+  components/
+    DurryIntro.jsx       — boss reveal cinematic
+    GigoReveal.jsx       — SAP corruption cinematic
+    NodeCard.jsx         — per-tier inventory/cost card
+    Leaderboard.jsx      — live ranked players
+    BullwhipChart.jsx    — 4-tier inventory oscillation chart
+    MalaysiaMap.jsx      — animated SVG supply chain map
+docs/
+  facilitator-guide.md   — how to run the game (keynote + classroom)
+  debrief-guide.md       — discussion questions, learning outcomes
+  firebase-setup.md      — Firebase project setup, step by step
+```
+
+---
 
 ## Tech stack
 
 | Layer | Tech |
-|-------|------|
-| Frontend | React 19 + Vite 8 |
-| Realtime | Firebase Realtime Database (Singapore) |
-| Auth | Firebase Auth SMS OTP |
+| ----- | ---- |
+| Frontend | React 19 + Vite |
+| Realtime | Firebase Realtime Database (Singapore region) |
+| Auth | Firebase Auth — SMS OTP |
 | Charts | Chart.js + react-chartjs-2 |
 | Hosting | Firebase Hosting |
-| Deploy | `firebase deploy --only hosting` |
 
-## Project structure
-
-```
-src/
-  App.jsx              — Router: /admin, /play, / (demo)
-  AdminScreen.jsx      — Projector view, 12 phases, presenter controls
-  PlayerScreen.jsx     — Mobile: register → OTP → play → watch → results
-  GameEngine.js        — Pure functions: demand, costs, AI logic, bullwhip
-  firebase.js          — Firebase init
-  components/
-    DurryIntro.jsx     — Boss reveal cinematic
-    GigoReveal.jsx     — SAP corruption cinematic
-    NodeCard.jsx       — Per-tier inventory/cost card
-    AnimNum.jsx        — Slot-machine number animation
-    Leaderboard.jsx    — Live ranked players
-    BullwhipChart.jsx  — 4-tier inventory oscillation chart
-    MalaysiaMap.jsx    — Animated SVG supply chain map
-```
-
-## The supply chain
-
-```
-🌾 Penang Farm → ⚙️ Ipoh Factory → 🚛 Shah Alam Hub → 🏪 KL Retailer
-   (3 wk)           (2 wk)             (1 wk)
-```
-
-Players control the KL Retailer. Holding cost: $0.50/case/week. Stockout penalty: $3.00/case/week.
+---
 
 ## Security
 
-- Admin route (`/admin`) is PIN-gated — requires authentication before accessing controls
+- Admin route (`/admin`) is PIN-gated
 - Firebase database rules restrict writes to authenticated paths
-- Player sessions validated against database on load (prevents ghost players after reset)
-- Admin reset broadcasts `resetAt` timestamp — all player phones auto-clear stale sessions
+- Player sessions validated against the database on load — prevents ghost players after reset
+- SMS OTP via Firebase Auth — no custom auth server required
 
-## Development
+---
 
-```bash
-npm install
-npm run dev          # local dev server
-npm run build        # production build
-firebase deploy --only hosting   # deploy to Firebase
-```
+## License
 
-### Environment variables
+MIT — free to use, adapt, and run in any academic or professional context.
 
-Create a `.env` file (see Firebase console for values):
-
-```
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_DATABASE_URL=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-```
+---
 
 ## Built by
 
-**TetriXX** — Automating complexity, delivering clarity for a sustainable future.
+[TetriXX](https://tetrixx.ai) — Automating complexity, delivering clarity for a sustainable future.
 
-[tetrixx.io](https://tetrixx.io)
+Premiered at **CargoNOW 2026, Kuala Lumpur** on May 15th, 2026 with ~150 supply chain practitioners.

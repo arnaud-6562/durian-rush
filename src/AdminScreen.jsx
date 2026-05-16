@@ -7,6 +7,7 @@ import {
   HOLD, BACK,
   stepGame, newGame, chainCost, retailerCost,
 } from "./GameEngine";
+import { PLAY_URL } from "./config/scenario";
 import DurryIntro from "./components/DurryIntro";
 import MalaysiaMap from "./components/MalaysiaMap";
 import {
@@ -90,6 +91,39 @@ function buildLeaderboard(playersData) {
       if (b.currentWeek !== a.currentWeek) return b.currentWeek - a.currentWeek;
       return a.cost - b.cost;
     });
+}
+
+// ══ EXPORT LEADS ════════════════════════════════════════════════
+function exportLeads(playersData) {
+  if (!playersData) return;
+  const lb = buildLeaderboard(playersData);
+  const escCSV = (v) => {
+    const s = String(v ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = [["Rank","Name","Email","Phone","TotalCost","JoinedAt"]];
+  lb.forEach((p, i) => {
+    const raw = playersData[p.uid] || {};
+    rows.push([
+      i + 1,
+      escCSV(p.name),
+      escCSV(raw.email || ""),
+      escCSV(raw.phone || ""),
+      p.cost.toFixed(2),
+      raw.joinedAt ? new Date(raw.joinedAt).toISOString() : "",
+    ]);
+  });
+  const csv = "﻿" + rows.map(r => r.join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `durian-rush-leads-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ══ COUNTDOWN HOOK ══════════════════════════════════════════════
@@ -841,7 +875,6 @@ export default function AdminScreen() {
 
   // ── LOBBY — QR left + educational slides right ─────────────────
   if (phase === "lobby") {
-    const PLAY_URL = "https://play.tetrixx.app/play";
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(PLAY_URL)}&color=D97706&bgcolor=000000&format=png`;
     return (
       <div style={{
@@ -878,7 +911,7 @@ export default function AdminScreen() {
                 fontFamily: "monospace", fontSize: 15, color: "#F59E0B", letterSpacing: 2,
                 marginBottom: 24, fontWeight: 700, textShadow: "0 2px 8px rgba(0,0,0,0.8)",
               }}>
-                play.tetrixx.app/play
+                {PLAY_URL.replace(/^https?:\/\//, "")}
               </div>
               <div style={{
                 fontSize: "clamp(56px, 14vw, 100px)", fontWeight: 900,
@@ -1961,32 +1994,7 @@ export default function AdminScreen() {
             }}>
               END SESSION
             </button>
-            <button onClick={() => {
-              const lb = buildLeaderboard(playersData);
-              const escCSV = (v) => {
-                const s = String(v ?? "");
-                return s.includes(",") || s.includes('"') || s.includes("\n")
-                  ? '"' + s.replace(/"/g, '""') + '"' : s;
-              };
-              const rows = [["Rank","Name","Email","Phone","TotalCost","JoinedAt"]];
-              lb.forEach((p, i) => {
-                const raw = playersData[p.uid] || {};
-                rows.push([
-                  i + 1,
-                  escCSV(p.name),
-                  escCSV(raw.email || ""),
-                  escCSV(raw.phone || ""),
-                  p.cost.toFixed(2),
-                  raw.joinedAt ? new Date(raw.joinedAt).toISOString() : "",
-                ]);
-              });
-              const csv = rows.map(r => r.join(",")).join("\n");
-              const blob = new Blob([csv], { type: "text/csv" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url; a.download = "durian-rush-leads.csv"; a.click();
-              URL.revokeObjectURL(url);
-            }} style={{
+            <button onClick={() => exportLeads(playersData)} style={{
               background: "linear-gradient(135deg, #10B981, #059669)",
               color: "#000", border: "none", borderRadius: 8,
               padding: "10px 24px", cursor: "pointer", fontFamily: "monospace",
@@ -2028,29 +2036,7 @@ export default function AdminScreen() {
         </div>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          <button onClick={() => {
-            const lb = buildLeaderboard(playersData);
-            const escCSV = (v) => {
-              const s = String(v ?? "");
-              return s.includes(",") || s.includes('"') || s.includes("\n")
-                ? '"' + s.replace(/"/g, '""') + '"' : s;
-            };
-            const rows = [["Rank","Name","Email","Phone","TotalCost","JoinedAt"]];
-            lb.forEach((p, i) => {
-              const raw = playersData[p.uid] || {};
-              rows.push([
-                i + 1, escCSV(p.name), escCSV(raw.email || ""),
-                escCSV(raw.phone || ""), p.cost.toFixed(2),
-                raw.joinedAt ? new Date(raw.joinedAt).toISOString() : "",
-              ]);
-            });
-            const csv = rows.map(r => r.join(",")).join("\n");
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = "durian-rush-leads.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }} style={{
+          <button onClick={() => exportLeads(playersData)} style={{
             background: "linear-gradient(135deg, #10B981, #059669)",
             color: "#000", border: "none", borderRadius: 12,
             padding: "14px 32px", cursor: "pointer", fontFamily: "monospace",

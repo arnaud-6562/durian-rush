@@ -1,7 +1,7 @@
 # Durian Rush — Claude Code Brief
 
 ## What we're building
-A live interactive supply chain game for a **45-minute keynote** at **CargoNOW 2025, Kuala Lumpur**.
+A live interactive supply chain game for a **45-minute keynote** at **CargoNOW 2026, Kuala Lumpur**.
 ~150 supply chain practitioners play on their phones against an AI opponent called **Durry**.
 Goal: demonstrate that AI beats humans in supply chain decisions — and that data quality is everything.
 

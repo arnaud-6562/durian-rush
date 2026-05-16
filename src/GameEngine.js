@@ -2,27 +2,10 @@
 // DURIAN RUSH — Pure Game Logic (no React, no Firebase)
 // ══════════════════════════════════════════════════════════════
 
-export const NODES = [
-  { id:"retailer",    name:"KL Retailer",    city:"Bangsar, KL",         emoji:"🏪", color:"#F59E0B", flag:"🇲🇾" },
-  { id:"distributor", name:"Shah Alam Hub",  city:"Shah Alam, Selangor", emoji:"🚛", color:"#10B981", flag:"🗺️" },
-  { id:"factory",     name:"Ipoh Factory",   city:"Kinta Valley, Perak", emoji:"⚙️", color:"#3B82F6", flag:"🏭" },
-  { id:"farm",        name:"Penang Farm",    city:"Balik Pulau, Penang", emoji:"🌾", color:"#A855F7", flag:"🏝️" },
-];
+export { NODES, LEAD_TIMES, DEMAND, HOLD, BACK, EVENTS, SAP_BUGS } from "./config/scenario.js";
+import { DEMAND, HOLD, BACK, SAP_BUGS, LEAD_TIMES } from "./config/scenario.js";
 
-export const LEAD_TIMES = [1, 2, 3, 1];
-export const DEMAND = [4, 4, 4, 6, 12, 18, 8, 4, 4, 4];
 export const N_WEEKS = DEMAND.length;
-export const HOLD = 0.5;
-export const BACK = 3.0;
-
-export const EVENTS = {
-  2: { emoji:"🌧️", badge:"WEATHER ALERT", title:"Penang monsoon alert", body:"Balik Pulau farms may slow harvest. Lead time risk to Ipoh.", bg:"#1E3A5F22", border:"#3B82F6" },
-  3: { emoji:"🛒", badge:"PROMO LAUNCH", title:"JB Giant promo launches", body:"Giant Hypermarket JB — buy 2 get 1 free Musang King cans. Expect cross-border demand.", bg:"#78350F22", border:"#F59E0B" },
-  4: { emoji:"🔴", badge:"CAUSEWAY SURGE", title:"Causeway surge — KL stock cut 35%", body:"Singapore demand pulling everything south. Shah Alam Hub rationing KL allocation to 65%.", bg:"#7F1D1D22", border:"#EF4444" },
-  6: { emoji:"📉", badge:"PROMO ENDS", title:"JB promo ends — demand normalising", body:"Giant promo over. Causeway traffic back to normal. But your pipeline orders are still in transit…", bg:"#06402622", border:"#10B981" },
-};
-
-export const SAP_BUGS = { phantomStock: 15, leadTimeDelta: -1, demandLag: 3 };
 
 export function buildVotes(week, demand, inv, pipelineTotal) {
   const opts = week < 3 ? [
