@@ -2,18 +2,18 @@
   "rules": {
     "game": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'"
+      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'"
     },
     "players": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'",
+      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'",
       "$uid": {
-        ".write": true
+        ".write": "auth != null && auth.uid === $uid"
       }
     },
     "ai": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'admin@durianrush.app'"
+      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'"
     }
   }
 }

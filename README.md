@@ -51,30 +51,26 @@ Between Round 2 and Round 3, the screen shows a simulated SAP data corruption al
 
 - [Node.js](https://nodejs.org) 18+
 - [Firebase CLI](https://firebase.google.com/docs/cli): `npm install -g firebase-tools`
-- A Firebase project with Realtime Database and Phone Auth enabled
+- A Firebase project with Realtime Database and Anonymous Auth enabled (both free)
 
-See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase setup.
+### Option A — Deploy with Claude Code (recommended for educators)
 
-### Install and run locally
+If you have [Claude Code](https://claude.ai/code) installed, the fastest path is to paste the ready-made prompt from [docs/deploy-with-claude.md](docs/deploy-with-claude.md) into your terminal. Claude will guide you through Firebase setup, `.env` configuration, and deployment step by step — no prior Firebase experience needed. Estimated time: 20 minutes.
+
+### Option B — Manual setup
+
+See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase setup without Claude.
 
 ```bash
 git clone https://github.com/arnaud-6562/durian-rush-kl.git
 cd durian-rush-kl
 npm install
 cp .env.example .env   # fill in your Firebase values
-npm run dev
-```
-
-Open `http://localhost:5173` for the single-player demo.
-Open `http://localhost:5173/admin` for presenter controls.
-Open `http://localhost:5173/play` on a phone for the player view.
-
-### Deploy
-
-```bash
 npm run build
 firebase deploy --only hosting
 ```
+
+Open `http://localhost:5173` locally or your Firebase Hosting URL for the live version.
 
 ---
 
@@ -86,7 +82,7 @@ See [docs/facilitator-guide.md](docs/facilitator-guide.md) for:
 - **90-minute classroom format** — extended timer, debrief before Durry, discussion structure
 - **Day-of setup checklist**
 
-See [docs/debrief-guide.md](docs/debrief-guide.md) for discussion questions and learning outcomes.
+See [docs/debrief-guide.md](docs/debrief-guide.md) for discussion questions, learning outcomes, and academic references (Beer Game, bullwhip effect, GIGO).
 
 ---
 
