@@ -218,7 +218,7 @@ See `docs/localizing.md` for step-by-step instructions.
 
 ```
 □ Firebase project live and database rules deployed
-□ Admin URL tested — opens directly, no login required
+□ Admin PIN working — test login at /admin (set VITE_ADMIN_PIN in .env before your session)
 □ SMS OTP test — send one OTP to your own phone
 □ .env configured — VITE_PLAY_URL matches your deployment
 □ QR code tested — scan it yourself, complete registration

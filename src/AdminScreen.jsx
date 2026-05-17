@@ -386,8 +386,52 @@ function LobbySlides() {
   );
 }
 
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || "demo1234";
+
 // ══ ADMIN SCREEN — PROJECTOR GAME SHOW ══════════════════════════
 export default function AdminScreen() {
+
+  // ── PIN gate (client-side, session-persisted) ─────────────────
+  const [pinAuthed, setPinAuthed] = useState(() => sessionStorage.getItem("dr_admin") === ADMIN_PIN);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+
+  const handlePin = () => {
+    if (pinInput === ADMIN_PIN) {
+      sessionStorage.setItem("dr_admin", ADMIN_PIN);
+      setPinAuthed(true);
+    } else {
+      setPinError(true);
+      setPinInput("");
+      setTimeout(() => setPinError(false), 1500);
+    }
+  };
+
+  if (!pinAuthed) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🥊</div>
+        <h1 style={{ fontSize: 36, fontWeight: 900, margin: "0 0 32px", background: "linear-gradient(135deg, #F59E0B, #FCD34D)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          DURIAN RUSH
+        </h1>
+        <div style={{ maxWidth: 280, width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+          <input
+            type="password"
+            placeholder="Enter PIN"
+            value={pinInput}
+            onChange={e => setPinInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handlePin()}
+            autoFocus
+            style={{ background: "rgba(255,255,255,0.08)", border: `1px solid ${pinError ? "#EF4444" : "rgba(255,255,255,0.15)"}`, borderRadius: 10, padding: "16px", fontSize: 24, color: "#fff", fontFamily: "monospace", textAlign: "center", letterSpacing: 8, outline: "none", width: "100%", boxSizing: "border-box", transition: "border-color 0.2s" }}
+          />
+          {pinError && <div style={{ color: "#EF4444", fontSize: 13, fontFamily: "monospace", textAlign: "center" }}>Wrong PIN</div>}
+          <button onClick={handlePin} style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#000", border: "none", borderRadius: 12, padding: "14px", fontSize: 16, fontWeight: 900, cursor: "pointer", fontFamily: "monospace", letterSpacing: 2 }}>
+            🔓 UNLOCK
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Game state ──
   const [phase, setPhaseLocal] = useState("intro");
