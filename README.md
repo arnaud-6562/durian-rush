@@ -62,7 +62,7 @@ If you have [Claude Code](https://claude.ai/code) installed, the fastest path is
 See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase setup without Claude.
 
 ```bash
-git clone https://github.com/arnaud-6562/durian-rush-kl.git
+git clone https://github.com/arnaud-6562/durian-rush.git
 cd durian-rush-kl
 npm install
 cp .env.example .env   # fill in your Firebase values
