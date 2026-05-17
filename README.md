@@ -8,12 +8,18 @@ A live multiplayer supply chain game for keynotes and classrooms.
 
 ---
 
-## Live demo
+## Try it
 
-| URL | Purpose |
-| --- | ------- |
-| [durian-rush-kl.web.app](https://durian-rush-kl.web.app) | Single-player demo — no Firebase required |
-| [/play](https://durian-rush-kl.web.app/play) | Player entry point (mobile) — try it on your phone |
+The single-player demo requires no Firebase — just clone and run locally:
+
+```bash
+git clone https://github.com/arnaud-6562/durian-rush.git
+cd durian-rush
+npm install && npm run dev
+```
+
+Open `http://localhost:5173` to play all three rounds as a single player.
+For the full multiplayer version, see **Quick Start** below.
 
 ---
 
@@ -144,7 +150,7 @@ docs/
 
 ## Security
 
-- Admin route (`/admin`) is PIN-gated
+- Admin route (`/admin`) is open — no login required, protect it by keeping your deployment URL private
 - Firebase database rules restrict writes to authenticated paths
 - Player sessions validated against the database on load — prevents ghost players after reset
 - SMS OTP via Firebase Auth — no custom auth server required

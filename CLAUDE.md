@@ -65,7 +65,7 @@ Players not yet directed to the URL.
 **Presenter says:** "Take out your phone. Scan this QR code."
 
 **Admin shows (big screen):**
-- Giant QR code → durian-rush-kl.web.app/play
+- Giant QR code → your-project-id.web.app/play
 - Live counter: "47 players joined" — updates every second
 - Scrolling feed of player names joining
 - Game rules summary (3 bullet points max — visible while people register)
@@ -258,7 +258,7 @@ TetriXX: *"Automating complexity, delivering clarity for a sustainable future."*
 |-------|------|
 | Frontend | React + Vite |
 | Realtime | Firebase Realtime Database (Singapore) |
-| Hosting | Firebase Hosting → durian-rush-kl.web.app |
+| Hosting | Firebase Hosting → your-project-id.web.app |
 | Auth | Firebase Auth SMS OTP |
 | Deploy | GitHub Actions on push to main |
 
@@ -340,7 +340,7 @@ order = Math.round(received * (1.4 + tierIdx * 0.2) + Math.max(0, 14 - inv) * 1.
 9. [ ] End-to-end rehearsal with real phones
 
 ## URLs
-- Live: https://durian-rush-kl.web.app
-- Admin: https://durian-rush-kl.web.app/admin
-- Player: https://durian-rush-kl.web.app/play
+- Live: https://your-project-id.web.app
+- Admin: https://your-project-id.web.app/admin
+- Player: https://your-project-id.web.app/play
 - GitHub: https://github.com/arnaud-6562/durian-rush-kl

@@ -13,7 +13,7 @@ Two formats are covered: a **45-minute keynote session** and a **90-minute class
 | Phones (audience) | Their own devices — Android or iOS, any browser |
 | Stable Wi-Fi | Firebase Realtime Database requires a live connection |
 | SMS quota | Firebase Auth phone OTP — check your monthly quota before a large session |
-| Admin PIN | Set in Firebase Console → your project password |
+| Admin URL | Keep it private — share only with the presenter |
 
 **Test 24 hours before:** do a full end-to-end rehearsal with 2–3 phones. Verify SMS OTP arrives, orders register, leaderboard updates.
 
@@ -218,7 +218,7 @@ See `docs/localizing.md` for step-by-step instructions.
 
 ```
 □ Firebase project live and database rules deployed
-□ Admin PIN working — test login at /admin
+□ Admin URL tested — opens directly, no login required
 □ SMS OTP test — send one OTP to your own phone
 □ .env configured — VITE_PLAY_URL matches your deployment
 □ QR code tested — scan it yourself, complete registration

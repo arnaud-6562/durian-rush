@@ -13,7 +13,7 @@
 
 // ── Deployment ────────────────────────────────────────────────
 // The URL shown on the QR code in the lobby. Set to your player URL.
-export const PLAY_URL = import.meta.env.VITE_PLAY_URL || "https://durian-rush-kl.web.app/play";
+export const PLAY_URL = import.meta.env.VITE_PLAY_URL || "https://your-project-id.web.app/play";
 
 // ── Supply chain tiers (retailer → distributor → factory → farm) ──
 export const NODES = [
