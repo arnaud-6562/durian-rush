@@ -6,9 +6,7 @@
     },
     "players": {
       ".read": true,
-      "$uid": {
-        ".write": true
-      }
+      ".write": true
     },
     "ai": {
       ".read": true,
