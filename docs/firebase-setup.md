@@ -57,9 +57,7 @@ The database is now live. Now apply the proper security rules:
     },
     "players": {
       ".read": true,
-      "$uid": {
-        ".write": true
-      }
+      ".write": true
     },
     "ai": {
       ".read": true,
@@ -87,6 +85,8 @@ Players join the game without creating an account. Firebase Anonymous Auth handl
 6. Click **Save**
 
 That's it. Do not enable any other providers — you do not need Phone, Google, or Email for this game.
+
+> **Running a conference instead of a classroom?** The default auth mode is `"anonymous"` (free, no SMS). If you want verified phone numbers for a large public event, change `AUTH_MODE` to `"sms"` in `src/config/scenario.js`, enable the **Phone** provider here instead of Anonymous, and switch to the Firebase Blaze (pay-as-you-go) plan — SMS costs ~$0.05 per player.
 
 ---
 

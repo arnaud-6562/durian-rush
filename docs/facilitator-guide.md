@@ -12,10 +12,10 @@ Two formats are covered: a **45-minute keynote session** and a **90-minute class
 | Laptop (presenter) | Connected to projector — open `/admin` full-screen |
 | Phones (audience) | Their own devices — Android or iOS, any browser |
 | Stable Wi-Fi | Firebase Realtime Database requires a live connection |
-| SMS quota | Firebase Auth phone OTP — check your monthly quota before a large session |
+| Admin PIN | Default is `demo1234` — change `VITE_ADMIN_PIN` in `.env` before a real session |
 | Admin URL | Keep it private — share only with the presenter |
 
-**Test 24 hours before:** do a full end-to-end rehearsal with 2–3 phones. Verify SMS OTP arrives, orders register, leaderboard updates.
+**Test 24 hours before:** do a full end-to-end rehearsal with 2–3 phones. Open `/play`, enter a name and email, tap JOIN — verify the player appears in the lobby counter.
 
 ---
 
@@ -51,7 +51,7 @@ This is the format used at CargoNOW 2025 (KL). Time is tight — follow the cloc
 **Say:**
 > "Take out your phone. Open your camera and scan this QR code."
 > *(pause 20 seconds)*
-> "You'll be asked for your name, email, and phone number. You'll get a 6-digit SMS code — enter it and you're in."
+> "You'll be asked for your name and email. Tap JOIN — you're in instantly, no code needed."
 
 **While people register, narrate the counter:**
 > "We've got 23 in... 41... keep going."
@@ -162,7 +162,7 @@ You do not need 100%. Starting with 50 out of 80 is fine.
 
 | Problem | Fix |
 |---------|-----|
-| Player can't receive SMS OTP | Ask them to use a neighbour's phone or skip — don't hold up the room |
+| Player stuck on JOIN button | Ask them to refresh and try again — no SMS needed, just name + email |
 | Leaderboard stuck | Refresh admin tab — Firebase reconnects automatically |
 | Week timer auto-locked too fast | Adjust **weekTimer** in admin controls before next week |
 | Player dropped mid-game | Their last order stands — no action needed |
@@ -210,7 +210,7 @@ The game config in `src/config/scenario.js` lets you adjust:
 - **Event cards** — replace Causeway / JB promo with scenarios relevant to your students
 - **Costs** — change holding vs stockout ratio to explore different risk profiles
 
-See `docs/localizing.md` for step-by-step instructions.
+All these values are in `src/config/scenario.js` — each one is commented with what to change.
 
 ---
 
@@ -219,7 +219,7 @@ See `docs/localizing.md` for step-by-step instructions.
 ```
 □ Firebase project live and database rules deployed
 □ Admin PIN working — test login at /admin (set VITE_ADMIN_PIN in .env before your session)
-□ SMS OTP test — send one OTP to your own phone
+□ Anonymous join test — open /play on your phone, enter name + email, verify you appear in the lobby
 □ .env configured — VITE_PLAY_URL matches your deployment
 □ QR code tested — scan it yourself, complete registration
 □ Projector connected — /admin full screen, browser zoom at 100%

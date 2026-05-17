@@ -125,7 +125,7 @@ src/
     scenario.js          — all game parameters (demand, events, costs, nodes)
   App.jsx                — router: /admin, /play, / (demo)
   AdminScreen.jsx        — projector view, 8 phases, presenter controls
-  PlayerScreen.jsx       — mobile: register → OTP → play → watch → results
+  PlayerScreen.jsx       — mobile: register → waiting → playing → watching → results
   GameEngine.js          — pure functions: AI logic, bullwhip, costs
   firebase.js            — Firebase init (reads from .env)
   components/
@@ -149,7 +149,7 @@ docs/
 | ----- | ---- |
 | Frontend | React 19 + Vite |
 | Realtime | Firebase Realtime Database (Singapore region) |
-| Auth | Firebase Auth — SMS OTP |
+| Auth | Firebase Auth — Anonymous (no SMS, no account required) |
 | Charts | Chart.js + react-chartjs-2 |
 | Hosting | Firebase Hosting |
 
@@ -158,9 +158,9 @@ docs/
 ## Security
 
 - Admin route (`/admin`) is PIN-gated — set `VITE_ADMIN_PIN` in your `.env` (default: `demo1234`, change before your session)
-- Firebase database rules restrict writes to authenticated paths
+- Firebase database rules open for game data — appropriate for a classroom tool with no sensitive data
 - Player sessions validated against the database on load — prevents ghost players after reset
-- SMS OTP via Firebase Auth — no custom auth server required
+- Players join with name + email only — no SMS, no account, no cost
 
 ---
 
