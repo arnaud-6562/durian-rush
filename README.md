@@ -13,8 +13,7 @@ A live multiplayer supply chain game for keynotes and classrooms.
 | URL | Purpose |
 | --- | ------- |
 | [durian-rush-kl.web.app](https://durian-rush-kl.web.app) | Single-player demo — no Firebase required |
-| [/admin](https://durian-rush-kl.web.app/admin) | Presenter controls (PIN-gated) |
-| [/play](https://durian-rush-kl.web.app/play) | Player entry point (mobile) |
+| [/play](https://durian-rush-kl.web.app/play) | Player entry point (mobile) — try it on your phone |
 
 ---
 
@@ -63,7 +62,7 @@ See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase s
 
 ```bash
 git clone https://github.com/arnaud-6562/durian-rush.git
-cd durian-rush-kl
+cd durian-rush
 npm install
 cp .env.example .env   # fill in your Firebase values
 npm run build
