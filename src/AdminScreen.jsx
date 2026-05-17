@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ref, set, update, onValue } from "firebase/database";
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { db, auth } from "./firebase";
+import { db } from "./firebase";
 import {
   NODES, DEMAND, N_WEEKS, EVENTS,
   HOLD, BACK,
@@ -44,7 +43,6 @@ ChartJS.register(
 const PHASES = ["intro","lobby","round1","round1_results","durry_intro","ai_running","ai_clean_results","gigo_reveal","ai_dirty","ai_dirty_results","results","ended"];
 const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes total for round 1
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "admin@durianrush.app";
 
 function writePhase(phase) { set(ref(db, "game/phase"), phase); }
 function writeWeek(week) { set(ref(db, "game/currentWeek"), week); }
@@ -390,31 +388,6 @@ function LobbySlides() {
 
 // ══ ADMIN SCREEN — PROJECTOR GAME SHOW ══════════════════════════
 export default function AdminScreen() {
-  // ── Admin auth — auto sign-in on mount using env credentials ──
-  const [adminAuthed, setAdminAuthed] = useState(false);
-  const [adminChecking, setAdminChecking] = useState(true);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user && user.email === ADMIN_EMAIL) {
-        setAdminAuthed(true);
-        setAdminChecking(false);
-        return;
-      }
-      // Not signed in — attempt auto sign-in with env credentials
-      const pwd = import.meta.env.VITE_ADMIN_PASSWORD;
-      if (ADMIN_EMAIL && pwd) {
-        try {
-          await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pwd);
-          setAdminAuthed(true);
-        } catch (e) {
-          console.error("Admin auto-login failed:", e);
-        }
-      }
-      setAdminChecking(false);
-    });
-    return unsub;
-  }, []);
 
   // ── Game state ──
   const [phase, setPhaseLocal] = useState("intro");
@@ -660,22 +633,6 @@ export default function AdminScreen() {
     return () => clearTimeout(id);
   }, [phase, deadline]);
 
-  // ── Admin PIN gate ───────────────────────────────────────────
-  if (adminChecking) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "monospace", fontSize: 14, color: "#555" }}>Loading…</div>
-      </div>
-    );
-  }
-
-  if (!adminAuthed) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#050505", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "monospace", fontSize: 14, color: "#555" }}>Connecting…</div>
-      </div>
-    );
-  }
 
   // ── Phase bar ─────────────────────────────────────────────────
   const PhaseBar = () => (

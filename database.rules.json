@@ -2,18 +2,17 @@
   "rules": {
     "game": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'"
+      ".write": true
     },
     "players": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": true
       }
     },
     "ai": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'YOUR_ADMIN_EMAIL'"
+      ".write": true
     }
   }
 }
