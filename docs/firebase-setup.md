@@ -53,17 +53,17 @@ The database is now live. Now apply the proper security rules:
   "rules": {
     "game": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
     },
     "players": {
       ".read": true,
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": true
       }
     },
     "ai": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
     }
   }
 }
@@ -71,7 +71,7 @@ The database is now live. Now apply the proper security rules:
 
 3. Click **Publish**
 
-What these rules do: anyone can read the game state (so players can see the leaderboard), but only signed-in users can write — which prevents random people from corrupting your session.
+What these rules do: the game data (scores, orders, AI results) is open for reading and writing. This is intentional for a classroom tool — the admin is protected by a PIN, and player data is not sensitive.
 
 ---
 
@@ -132,9 +132,13 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=  ← paste the messagingSenderId value
 VITE_FIREBASE_APP_ID=         ← paste the appId value
 
 VITE_PLAY_URL=https://your-project-id.web.app/play
+
+VITE_ADMIN_PIN=choose-a-pin
 ```
 
 For `VITE_PLAY_URL`, replace `your-project-id` with your actual Firebase project ID (the same one that appears in `authDomain`).
+
+For `VITE_ADMIN_PIN`, choose any PIN you will remember — 4 to 8 characters. This is the PIN you will enter to access `/admin` before your session. **Change it from the default (`demo1234`) before running a real class.**
 
 Save the file. Do not share this file or commit it to GitHub — it contains your project credentials.
 
@@ -165,7 +169,7 @@ A browser window will open asking you to sign in with your Google account. Use t
 Still in the terminal, navigate to the Durian Rush project folder:
 
 ```bash
-cd path/to/durian-rush-kl
+cd path/to/durian-rush
 ```
 
 Then run:
@@ -219,11 +223,12 @@ Your game is live.
 ## Step 9 — Test that everything works
 
 1. Open `https://your-project-id.web.app/admin` in a browser on your laptop
-   - You should see the Durian Rush admin screen with a QR code and lobby counter showing 0 players
-2. Open `https://your-project-id.web.app/play` on your phone (or scan the QR code)
+   - Enter the PIN you set in `VITE_ADMIN_PIN` (default: `demo1234`)
+   - You should see the Durian Rush admin control panel
+2. Open `https://your-project-id.web.app/play` on your phone (or scan the QR code on the admin screen)
    - You should see the player registration screen
-3. Enter a name, email, and phone number on your phone, then tap **Send Code**
-   - You will receive a 6-digit SMS code — enter it to join
+3. Enter your name and email on your phone, then tap **JOIN**
+   - No SMS or code required — you join instantly
 4. Back on the admin screen, the lobby counter should jump to **1 player joined**
 
 If the counter updates, your Firebase connection is working correctly. You are ready to run the game.

@@ -103,6 +103,9 @@ VITE_FIREBASE_STORAGE_BUCKET=[storageBucket]
 VITE_FIREBASE_MESSAGING_SENDER_ID=[messagingSenderId]
 VITE_FIREBASE_APP_ID=[appId]
 VITE_PLAY_URL=https://[projectId].web.app/play
+VITE_ADMIN_PIN=[ask the user to choose a PIN — 4 to 8 characters, something they will remember]
+
+Ask me what PIN I want to use for the admin screen before writing the file. Explain that this PIN protects the presenter controls at /admin — the default is demo1234 if I leave it blank, but I should change it before running a real session.
 
 Show me the completed .env content before writing it, and ask for my confirmation. Then write the file.
 
@@ -165,10 +168,12 @@ STEP 10 — FINAL CHECKLIST
 
 Remind me to do these before using it in class:
 
-1. Open the Admin URL on my laptop — I should see the game intro screen
-2. Open the Player URL on my own phone — I should be able to join as a player
-3. In the Firebase console, go to Realtime Database and confirm data is appearing when I interact with the app
-4. If anything is broken, check the browser console (F12) for error messages and share them with me
+1. Open the Admin URL on my laptop — enter the PIN I chose, I should see the game control panel
+2. Open the Player URL on my own phone — enter a name and email, tap JOIN — no SMS required
+3. The lobby counter on the admin screen should jump to 1 when I join as a player
+4. In the Firebase console, go to Realtime Database and confirm data is appearing when I interact with the app
+5. Before a real session, set a private VITE_ADMIN_PIN in .env, rebuild, and redeploy — do not use the default demo1234 for a class
+6. If anything is broken, check the browser console (F12) for error messages and share them with me
 
 ---
 

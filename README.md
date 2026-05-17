@@ -69,12 +69,20 @@ See [docs/firebase-setup.md](docs/firebase-setup.md) for step-by-step Firebase s
 git clone https://github.com/arnaud-6562/durian-rush.git
 cd durian-rush
 npm install
-cp .env.example .env   # fill in your Firebase values
+cp .env.example .env
+```
+
+Open `.env` and fill in your Firebase values. Set `VITE_ADMIN_PIN` to a PIN you will remember — this protects the presenter controls at `/admin`. The default is `demo1234` if you leave it blank, but **change it before running a real session**.
+
+```bash
 npm run build
 firebase deploy --only hosting
 ```
 
-Open `http://localhost:5173` locally or your Firebase Hosting URL for the live version.
+Your game is live at `https://your-project-id.web.app`.
+
+- `/admin` — presenter controls (enter your PIN)
+- `/play` — player entry point (share QR code or URL with students)
 
 ---
 
