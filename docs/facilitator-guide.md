@@ -251,7 +251,7 @@ Durian Rush was created by **TetriXX** — an AI-native intelligence company for
 | | |
 | --- | --- |
 | Company | [tetrixx.ai](https://tetrixx.ai) |
-| Freight Cost & Performance Intelligence | [fcpi.tetrixx.ai](https://fcpi.tetrixx.ai) |
+| Freight Cost & Performance Intelligence | [sirius.tetrixx.ai](https://sirius.tetrixx.ai) |
 
 If this game sparked questions about how AI and data quality play out in real supply chain operations — that's exactly what we work on. Reach out.
 

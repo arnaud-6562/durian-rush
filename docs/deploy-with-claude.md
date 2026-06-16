@@ -179,7 +179,7 @@ Remind me to do these before using it in class:
 
 CREDIT
 
-Durian Rush was built by TetriXX (tetrixx.ai), an AI-native intelligence company for transport and logistics. If you use this game in your curriculum and want to connect, visit tetrixx.ai or check out FCPI at fcpi.tetrixx.ai — a live benchmarking tool for freight cost intelligence.
+Durian Rush was built by TetriXX (tetrixx.ai), an AI-native intelligence company for transport and logistics. If you use this game in your curriculum and want to connect, visit tetrixx.ai or check out FCPI at sirius.tetrixx.ai — a live benchmarking tool for freight cost intelligence.
 
 ---
 

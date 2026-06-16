@@ -173,7 +173,7 @@ When Durry loses in round 3, it does not look broken. It looks like a system mak
 
 Durian Rush was built by [TetriXX](https://tetrixx.ai), an AI-native freight intelligence company based in Singapore. The game demonstrates in 28 minutes what TetriXX sees in real-world freight audit data every day: the gap between what an ERP reports and what is actually happening is where cost leaks, AI failures, and procurement risk live.
 
-If your organization processes freight invoices and you want to see what GIGO looks like in a live P&L, TetriXX's FCPI product (Freight Cost Performance Intelligence) is at [fcpi.tetrixx.ai](https://fcpi.tetrixx.ai).
+If your organization processes freight invoices and you want to see what GIGO looks like in a live P&L, TetriXX's FCPI product (Freight Cost Performance Intelligence) is at [sirius.tetrixx.ai](https://sirius.tetrixx.ai).
 
 Durian Rush is open source. The game engine, Firebase schema, and all components are available at [github.com/arnaud-6562/durian-rush-kl](https://github.com/arnaud-6562/durian-rush-kl). Adapt it, run it, break it, and send us what you learn.
 
