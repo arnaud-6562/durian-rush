@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ref, set, update, onValue } from "firebase/database";
+import { QRCodeSVG } from "qrcode.react";
 import { db } from "./firebase";
 import {
   NODES, DEMAND, N_WEEKS, EVENTS,
@@ -816,7 +817,6 @@ export default function AdminScreen() {
 
   // ── LOBBY — QR left + educational slides right ─────────────────
   if (phase === "lobby") {
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(PLAY_URL)}&color=D97706&bgcolor=000000&format=png`;
     return (
       <div style={{
         minHeight: "100vh", color: "#fff", fontFamily: "system-ui, sans-serif",
@@ -846,7 +846,17 @@ export default function AdminScreen() {
                 background: "#000", padding: 16, borderRadius: 16, marginBottom: 16,
                 border: "3px solid #F59E0B66", boxShadow: "0 0 40px #F59E0B22",
               }}>
-                <img src={qrSrc} alt="QR Code" style={{ width: 280, height: 280, display: "block", borderRadius: 8 }} />
+                <QRCodeSVG
+                  data-qr="true"
+                  value={PLAY_URL}
+                  size={280}
+                  level="M"
+                  marginSize={4}
+                  fgColor="#D97706"
+                  bgColor="#000000"
+                  title="Scan to join Durian Rush"
+                  style={{ display: "block", borderRadius: 8 }}
+                />
               </div>
               <div style={{
                 fontFamily: "monospace", fontSize: 15, color: "#F59E0B", letterSpacing: 2,
