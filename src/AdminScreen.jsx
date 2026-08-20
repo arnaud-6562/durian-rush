@@ -91,8 +91,8 @@ function buildLeaderboard(playersData) {
     });
 }
 
-// ══ EXPORT LEADS ════════════════════════════════════════════════
-function exportLeads(playersData) {
+// ══ EXPORT RESULTS ══════════════════════════════════════════════
+function exportResults(playersData) {
   if (!playersData) return;
   const lb = buildLeaderboard(playersData);
   const escCSV = (v) => {
@@ -100,14 +100,12 @@ function exportLeads(playersData) {
     return s.includes(",") || s.includes('"') || s.includes("\n")
       ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const rows = [["Rank","Name","Email","Phone","TotalCost","JoinedAt"]];
+  const rows = [["Rank","Nickname","TotalCost","JoinedAt"]];
   lb.forEach((p, i) => {
     const raw = playersData[p.uid] || {};
     rows.push([
       i + 1,
       escCSV(p.name),
-      escCSV(raw.email || ""),
-      escCSV(raw.phone || ""),
       p.cost.toFixed(2),
       raw.joinedAt ? new Date(raw.joinedAt).toISOString() : "",
     ]);
@@ -117,7 +115,7 @@ function exportLeads(playersData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `durian-rush-leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `durian-rush-results-${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -450,11 +448,7 @@ export default function AdminScreen() {
     for (const uid of currentUids) {
       if (!prevPlayerUids.current.has(uid)) {
         const p = playersData[uid];
-        const phone = p.phone || "";
-        const masked = phone.length > 4
-          ? phone.slice(0, phone.length - 4).replace(/./g, "•") + phone.slice(-4)
-          : phone;
-        newJoins.push({ uid, emoji: p.emoji || "👤", name: p.name || "???", phone: masked, ts: Date.now() });
+        newJoins.push({ uid, emoji: p.emoji || "👤", name: p.name || "???", ts: Date.now() });
       }
     }
     if (newJoins.length > 0) {
@@ -898,7 +892,6 @@ export default function AdminScreen() {
                         }}>
                           {j.name}
                         </span>
-                        <span style={{ fontFamily: "monospace", fontSize: 10, color: "#555" }}>{j.phone}</span>
                         <span style={{ fontFamily: "monospace", fontSize: 10, color: "#10B981" }}>{agoStr}</span>
                       </div>
                     );
@@ -1941,13 +1934,13 @@ export default function AdminScreen() {
             }}>
               END SESSION
             </button>
-            <button onClick={() => exportLeads(playersData)} style={{
+            <button onClick={() => exportResults(playersData)} style={{
               background: "linear-gradient(135deg, #10B981, #059669)",
               color: "#000", border: "none", borderRadius: 8,
               padding: "10px 24px", cursor: "pointer", fontFamily: "monospace",
               fontSize: 11, fontWeight: 900, letterSpacing: 1,
             }}>
-              📥 EXPORT LEADS
+              📥 EXPORT RESULTS
             </button>
           </div>
           <div style={{ textAlign: "center", marginTop: 16, color: "#1a1a1a", fontSize: 10, fontFamily: "monospace" }}>
@@ -1983,13 +1976,13 @@ export default function AdminScreen() {
         </div>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          <button onClick={() => exportLeads(playersData)} style={{
+          <button onClick={() => exportResults(playersData)} style={{
             background: "linear-gradient(135deg, #10B981, #059669)",
             color: "#000", border: "none", borderRadius: 12,
             padding: "14px 32px", cursor: "pointer", fontFamily: "monospace",
             fontSize: 14, fontWeight: 900, letterSpacing: 1,
           }}>
-            📥 EXPORT LEADS
+            📥 EXPORT RESULTS
           </button>
           <button onClick={reset} style={{
             background: "linear-gradient(135deg, #EF4444, #B91C1C)",

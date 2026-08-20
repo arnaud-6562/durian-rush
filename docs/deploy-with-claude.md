@@ -61,13 +61,10 @@ A. Realtime Database:
    - Start in test mode for now (we will tighten security rules later)
    - Click "Enable"
 
-B. Authentication:
-   - Go to Build > Authentication
-   - Click "Get started"
-   - Go to the Sign-in method tab
-   - Enable "Anonymous" sign-in (just toggle it on, click Save)
+Do not set up Authentication — the game does not use it. Players join with a
+nickname and nothing else.
 
-Ask me to confirm both are enabled before continuing.
+Ask me to confirm the database is enabled before continuing.
 
 ---
 
@@ -169,7 +166,7 @@ STEP 10 — FINAL CHECKLIST
 Remind me to do these before using it in class:
 
 1. Open the Admin URL on my laptop — enter the PIN I chose, I should see the game control panel
-2. Open the Player URL on my own phone — enter a name and email, tap JOIN — no SMS required
+2. Open the Player URL on my own phone — enter a nickname, tap JOIN — nothing else is asked for
 3. The lobby counter on the admin screen should jump to 1 when I join as a player
 4. In the Firebase console, go to Realtime Database and confirm data is appearing when I interact with the app
 5. Before a real session, set a private VITE_ADMIN_PIN in .env, rebuild, and redeploy — do not use the default demo1234 for a class

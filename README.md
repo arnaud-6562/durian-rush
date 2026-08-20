@@ -55,7 +55,7 @@ Between Round 2 and Round 3, the screen shows a simulated SAP data corruption al
 
 - [Node.js](https://nodejs.org) 18+
 - [Firebase CLI](https://firebase.google.com/docs/cli): `npm install -g firebase-tools`
-- A Firebase project with Realtime Database and Anonymous Auth enabled (both free)
+- A Firebase project with Realtime Database enabled (free) — no Authentication setup needed
 
 ### Option A — Deploy with Claude Code (recommended for educators)
 
@@ -149,7 +149,6 @@ docs/
 | ----- | ---- |
 | Frontend | React 19 + Vite |
 | Realtime | Firebase Realtime Database (Singapore region) |
-| Auth | Firebase Auth — Anonymous (no SMS, no account required) |
 | Charts | Chart.js + react-chartjs-2 |
 | Hosting | Firebase Hosting |
 
@@ -160,7 +159,8 @@ docs/
 - Admin route (`/admin`) is PIN-gated — set `VITE_ADMIN_PIN` in your `.env` (default: `demo1234`, change before your session)
 - Firebase database rules open for game data — appropriate for a classroom tool with no sensitive data
 - Player sessions validated against the database on load — prevents ghost players after reset
-- Players join with name + email only — no SMS, no account, no cost
+- Players join with a nickname only — no email, no phone, no account, no sign-in of any kind
+- No personal data is collected, so there is nothing sensitive to leak
 
 ---
 

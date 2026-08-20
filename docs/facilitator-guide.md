@@ -15,7 +15,7 @@ Two formats are covered: a **45-minute keynote session** and a **90-minute class
 | Admin PIN | Default is `demo1234` — change `VITE_ADMIN_PIN` in `.env` before a real session |
 | Admin URL | Keep it private — share only with the presenter |
 
-**Test 24 hours before:** do a full end-to-end rehearsal with 2–3 phones. Open `/play`, enter a name and email, tap JOIN — verify the player appears in the lobby counter.
+**Test 24 hours before:** do a full end-to-end rehearsal with 2–3 phones. Open `/play`, enter a nickname, tap JOIN — verify the player appears in the lobby counter.
 
 ---
 
@@ -51,7 +51,7 @@ This is the format used at CargoNOW 2025 (KL). Time is tight — follow the cloc
 **Say:**
 > "Take out your phone. Open your camera and scan this QR code."
 > *(pause 20 seconds)*
-> "You'll be asked for your name and email. Tap JOIN — you're in instantly, no code needed."
+> "Pick a nickname — that's all it asks for. Tap JOIN and you're on the board."
 
 **While people register, narrate the counter:**
 > "We've got 23 in... 41... keep going."
@@ -162,7 +162,7 @@ You do not need 100%. Starting with 50 out of 80 is fine.
 
 | Problem | Fix |
 |---------|-----|
-| Player stuck on JOIN button | Ask them to refresh and try again — no SMS needed, just name + email |
+| Player stuck on JOIN button | Ask them to refresh and try again — a nickname is the only thing required |
 | Leaderboard stuck | Refresh admin tab — Firebase reconnects automatically |
 | Week timer auto-locked too fast | Adjust **weekTimer** in admin controls before next week |
 | Player dropped mid-game | Their last order stands — no action needed |
@@ -219,7 +219,7 @@ All these values are in `src/config/scenario.js` — each one is commented with 
 ```
 □ Firebase project live and database rules deployed
 □ Admin PIN working — test login at /admin (set VITE_ADMIN_PIN in .env before your session)
-□ Anonymous join test — open /play on your phone, enter name + email, verify you appear in the lobby
+□ Join test — open /play on your phone, enter a nickname, verify you appear in the lobby
 □ .env configured — VITE_PLAY_URL matches your deployment
 □ QR code tested — scan it yourself, complete registration
 □ Projector connected — /admin full screen, browser zoom at 100%

@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,6 +10,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Players are identified by a local random id, not a Firebase Auth account —
+// registration asks for a nickname and nothing else.
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
-export const auth = getAuth(app);

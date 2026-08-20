@@ -4,7 +4,7 @@
 No software engineering background required. Estimated time: **20 minutes**.
 
 > **It costs nothing.** This entire setup runs on Firebase's free Spark plan.
-> Realtime Database, Anonymous Authentication, and Hosting are all included at no charge.
+> Realtime Database and Hosting are both included at no charge.
 > Firebase does not ask for a credit card for the Spark plan.
 
 ---
@@ -73,24 +73,7 @@ What these rules do: the game data (scores, orders, AI results) is open for read
 
 ---
 
-## Step 3 — Enable Authentication (Anonymous)
-
-Players join the game without creating an account. Firebase Anonymous Auth handles this silently — players get a temporary identity the moment they open the player page.
-
-1. In the left sidebar, click **Build** → **Authentication**
-2. Click **Get started**
-3. Under the **Sign-in method** tab, find **Anonymous** in the list
-4. Click on **Anonymous**
-5. Toggle the **Enable** switch to on
-6. Click **Save**
-
-That's it. Do not enable any other providers — you do not need Phone, Google, or Email for this game.
-
-> **Running a conference instead of a classroom?** The default auth mode is `"anonymous"` (free, no SMS). If you want verified phone numbers for a large public event, change `AUTH_MODE` to `"sms"` in `src/config/scenario.js`, enable the **Phone** provider here instead of Anonymous, and switch to the Firebase Blaze (pay-as-you-go) plan — SMS costs ~$0.05 per player.
-
----
-
-## Step 4 — Register a web app and get your config
+## Step 3 — Register a web app and get your config
 
 1. Click the gear icon next to **Project Overview** in the top-left sidebar → **Project settings**
 2. Scroll down to the **Your apps** section
@@ -117,7 +100,7 @@ Keep this page open — you will copy these values in the next step.
 
 ---
 
-## Step 5 — Fill in your .env file
+## Step 4 — Fill in your .env file
 
 In the Durian Rush project folder on your computer, find the file called `.env.example`. Make a copy of it and name the copy `.env` (no `.example`).
 
@@ -144,7 +127,7 @@ Save the file. Do not share this file or commit it to GitHub — it contains you
 
 ---
 
-## Step 6 — Install Firebase CLI and log in
+## Step 5 — Install Firebase CLI and log in
 
 The Firebase CLI is a small command-line tool that lets you deploy the game from your computer.
 
@@ -164,7 +147,7 @@ A browser window will open asking you to sign in with your Google account. Use t
 
 ---
 
-## Step 7 — Initialize Firebase Hosting
+## Step 6 — Initialize Firebase Hosting
 
 Still in the terminal, navigate to the Durian Rush project folder:
 
@@ -190,7 +173,7 @@ Firebase is now configured for hosting.
 
 ---
 
-## Step 8 — Build and deploy
+## Step 7 — Build and deploy
 
 Install the project dependencies (only needed once):
 
@@ -220,15 +203,15 @@ Your game is live.
 
 ---
 
-## Step 9 — Test that everything works
+## Step 8 — Test that everything works
 
 1. Open `https://your-project-id.web.app/admin` in a browser on your laptop
    - Enter the PIN you set in `VITE_ADMIN_PIN` (default: `demo1234`)
    - You should see the Durian Rush admin control panel
 2. Open `https://your-project-id.web.app/play` on your phone (or scan the QR code on the admin screen)
-   - You should see the player registration screen
-3. Enter your name and email on your phone, then tap **JOIN**
-   - No SMS or code required — you join instantly
+   - You should see the nickname entry screen
+3. Enter a nickname on your phone, then tap **JOIN**
+   - Nothing else is asked for — no email, no code, no sign-in
 4. Back on the admin screen, the lobby counter should jump to **1 player joined**
 
 If the counter updates, your Firebase connection is working correctly. You are ready to run the game.
@@ -249,9 +232,9 @@ Your `.env` file may have an incorrect `VITE_FIREBASE_DATABASE_URL`. Check that 
 
 The `.env` file was not loaded during the build. Make sure the file is named exactly `.env` (not `.env.txt` or `.env.example`) and is in the root of the project folder, then rebuild.
 
-**Players get stuck after entering their name — nothing happens**
+**Players get stuck after entering a nickname — nothing happens**
 
-Anonymous Authentication may not be enabled. Go to Firebase Console → Build → Authentication → Sign-in method, and confirm that Anonymous is toggled on and saved.
+The database rules were probably never published. Go to Firebase Console → Build → Realtime Database → Rules, paste the rules from Step 2, and click Publish. The game needs no Authentication setup at all — if a guide tells you to enable a sign-in provider, it is out of date.
 
 ---
 

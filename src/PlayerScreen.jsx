@@ -1,26 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { ref, onValue, set, get } from "firebase/database";
-import { RecaptchaVerifier, signInWithPhoneNumber, signInAnonymously, signOut, onAuthStateChanged } from "firebase/auth";
-import { db, auth } from "./firebase";
+import { useState, useEffect } from "react";
+import { ref, onValue, set } from "firebase/database";
+import { db } from "./firebase";
 import { DEMAND, N_WEEKS, EVENTS, buildVotes, simulatePlayerCost } from "./GameEngine";
-import { AUTH_MODE } from "./config/scenario";
 
 const EMOJIS = ["🦁","🐯","🦊","🐻","🦅","🐲","🦎","🐬","🦈","🐸"];
 const randomEmoji = () => EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
 const makeUid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-const COUNTRY_CODES = [
-  { code: "+60", label: "🇲🇾 +60", country: "MY" },
-  { code: "+65", label: "🇸🇬 +65", country: "SG" },
-  { code: "+66", label: "🇹🇭 +66", country: "TH" },
-  { code: "+62", label: "🇮🇩 +62", country: "ID" },
-  { code: "+84", label: "🇻🇳 +84", country: "VN" },
-  { code: "+63", label: "🇵🇭 +63", country: "PH" },
-  { code: "+91", label: "🇮🇳 +91", country: "IN" },
-  { code: "+1",  label: "🇺🇸 +1",  country: "US" },
-  { code: "+33", label: "🇫🇷 +33", country: "FR" },
-  { code: "+44", label: "🇬🇧 +44", country: "UK" },
-];
 
 // ══ PLAYER PHONE VIEW ═══════════════════════════════════════════
 
@@ -32,23 +17,10 @@ export default function PlayerScreen() {
   const [player, setPlayer] = useState(null);
   const [playerChecked, setPlayerChecked] = useState(false);
 
-  // Form state
+  // Form state — nickname is the only thing we ask for
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [countryCode, setCountryCode] = useState("+60");
-  const [phoneNum, setPhoneNum] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-
-  // OTP state
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [confirmResult, setConfirmResult] = useState(null);
-  const [otpError, setOtpError] = useState(null);
-  const [resendTimer, setResendTimer] = useState(0);
-  const [verifying, setVerifying] = useState(false);
-  const [showSkip, setShowSkip] = useState(false); // auto-show SKIP after 10s
-  const formDataRef = useRef(null); // store form data during OTP
 
   // Game state — self-paced: player tracks own week locally
   const [myWeek, setMyWeek] = useState(0);
@@ -61,31 +33,12 @@ export default function PlayerScreen() {
   const [topPlayers, setTopPlayers] = useState([]);
   const [myRank, setMyRank] = useState(null);
 
-  // On mount: restore player from sessionStorage + validate Firebase Auth session
+  // On mount: restore player from sessionStorage, then confirm they still exist
   useEffect(() => {
     let cancelled = false;
 
-    // 1. Handle Firebase Auth sessions (prevents ghost players after reset)
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      if (cancelled) return;
-      if (user) {
-        // Auth session exists — check if player record still exists in DB
-        const snap = await get(ref(db, `players/${user.uid}`));
-        if (!snap.exists() || !snap.val()?.name) {
-          // Player record gone or empty (game was reset) — sign out
-          console.log("Ghost session detected — signing out", user.uid);
-          await signOut(auth);
-          sessionStorage.removeItem("dr_player");
-          setPlayer(null);
-          setPlayerChecked(true);
-          return;
-        }
-      }
-    });
-
-    // 2. Restore from sessionStorage (non-auth players)
     const saved = (() => { try { const s = sessionStorage.getItem("dr_player"); return s ? JSON.parse(s) : null; } catch { return null; } })();
-    if (!saved) { setPlayerChecked(true); return () => { cancelled = true; unsubAuth(); }; }
+    if (!saved) { setPlayerChecked(true); return () => { cancelled = true; }; }
     // Check if this uid still exists in Firebase
     const unsub = onValue(ref(db, `players/${saved.uid}`), (snap) => {
       if (cancelled) return;
@@ -99,7 +52,7 @@ export default function PlayerScreen() {
       setPlayerChecked(true);
       unsub(); // one-shot read
     });
-    return () => { cancelled = true; unsubAuth(); };
+    return () => { cancelled = true; };
   }, []);
 
   const clearPlayer = () => {
@@ -139,14 +92,13 @@ export default function PlayerScreen() {
     return unsub;
   }, []);
 
-  // Listen for game reset — sign out players who joined before the reset
+  // Listen for game reset — drop players who joined before the reset
   useEffect(() => {
     const unsub = onValue(ref(db, "game/resetAt"), (snap) => {
       const resetAt = snap.val();
       if (!resetAt || !player) return;
       if (player.joinedAt && resetAt > player.joinedAt) {
         console.log("Game reset detected — clearing player session");
-        signOut(auth).catch(() => {});
         sessionStorage.removeItem("dr_player");
         setPlayer(null);
         setPlayerChecked(true);
@@ -217,20 +169,6 @@ export default function PlayerScreen() {
     return () => clearInterval(id);
   }, [deadline]);
 
-  // Resend timer countdown
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    const id = setInterval(() => setResendTimer(t => Math.max(0, t - 1)), 1000);
-    return () => clearInterval(id);
-  }, [resendTimer]);
-
-  // Auto-show SKIP button after 10s in OTP step
-  useEffect(() => {
-    if (!otpStep) { setShowSkip(false); return; }
-    const t = setTimeout(() => setShowSkip(true), 10000);
-    return () => clearTimeout(t);
-  }, [otpStep]);
-
   const submitDecision = (opt) => {
     if (!player || finished || myWeek >= N_WEEKS) return;
     const currentWeek = myWeek;
@@ -253,103 +191,27 @@ export default function PlayerScreen() {
       .catch(e => console.error("Week write failed:", e));
   };
 
-  const finishRegistration = async (verified) => {
-    const fd = formDataRef.current;
-    const uid = verified && auth.currentUser ? auth.currentUser.uid : makeUid();
-    const data = {
-      name: fd.name,
-      email: fd.email,
-      phone: fd.phone,
-      joinedAt: Date.now(),
-      emoji: randomEmoji(),
-      verified,
-    };
-    await set(ref(db, `players/${uid}`), data);
-    const playerObj = { uid, ...data };
-    sessionStorage.setItem("dr_player", JSON.stringify(playerObj));
-    setPlayer(playerObj);
-    setOtpStep(false);
-  };
-
   const handleJoin = async () => {
-    const trimName = name.trim();
-    const trimEmail = email.trim();
-    if (!trimName) { setError("Enter your name"); return; }
-    if (!trimEmail || !trimEmail.includes("@")) { setError("Enter a valid email"); return; }
+    const nickname = name.trim();
+    if (!nickname) { setError("Enter a nickname"); return; }
 
     setSubmitting(true);
     setError(null);
-
-    if (AUTH_MODE === "anonymous") {
-      try {
-        const cred = await signInAnonymously(auth);
-        const uid = cred.user.uid;
-        const data = { name: trimName, email: trimEmail, phone: null, joinedAt: Date.now(), emoji: randomEmoji(), verified: false };
-        await set(ref(db, `players/${uid}`), data);
-        const playerObj = { uid, ...data };
-        sessionStorage.setItem("dr_player", JSON.stringify(playerObj));
-        setPlayer(playerObj);
-      } catch (err) {
-        console.error("Join error:", err);
-        setError("Something went wrong — try again");
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
-
-    // SMS mode
-    const trimPhone = phoneNum.trim();
-    if (!trimPhone || trimPhone.length < 6) { setError("Enter a valid mobile number"); setSubmitting(false); return; }
-    const fullPhone = countryCode + trimPhone.replace(/^0+/, "");
-    formDataRef.current = { name: trimName, email: trimEmail, phone: fullPhone };
     try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-      }
-      const result = await signInWithPhoneNumber(auth, fullPhone, window.recaptchaVerifier);
-      setConfirmResult(result);
-      setOtpStep(true);
-      setResendTimer(30);
+      // No auth call: the database rules are open, so the write needs no
+      // credentials. The uid is a local random id — nothing depends on it
+      // beyond addressing this player's own record.
+      const uid = makeUid();
+      const data = { name: nickname, joinedAt: Date.now(), emoji: randomEmoji() };
+      await set(ref(db, `players/${uid}`), data);
+      const playerObj = { uid, ...data };
+      sessionStorage.setItem("dr_player", JSON.stringify(playerObj));
+      setPlayer(playerObj);
     } catch (err) {
-      console.error("SMS error:", err);
-      setError("SMS failed — you can still join without verification");
-      formDataRef.current = { name: trimName, email: trimEmail, phone: fullPhone };
-      setOtpStep(true);
-      setConfirmResult(null);
+      console.error("Join error:", err);
+      setError(`Could not join (${err?.code || "unknown error"}) — try again`);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) { setOtpError("Enter the 6-digit code"); return; }
-    if (!confirmResult) { setOtpError("No SMS was sent — use Skip below"); return; }
-    setVerifying(true);
-    setOtpError(null);
-    try {
-      await confirmResult.confirm(otpCode);
-      await finishRegistration(true);
-    } catch (err) {
-      console.error("OTP error:", err);
-      setOtpError("Invalid code — try again or skip");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const handleResend = async () => {
-    if (resendTimer > 0 || !formDataRef.current) return;
-    try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-      }
-      const result = await signInWithPhoneNumber(auth, formDataRef.current.phone, window.recaptchaVerifier);
-      setConfirmResult(result);
-      setResendTimer(30);
-      setOtpError(null);
-    } catch (err) {
-      setOtpError("Resend failed — use Skip below");
     }
   };
 
@@ -377,66 +239,6 @@ export default function PlayerScreen() {
           </p>
         </div>
         <div style={{ ...S.footer, fontSize: 14 }}>powered by TetriXX</div>
-      </div>
-    );
-  }
-
-  // ── Lobby — OTP step ───────────────────────────────────────────
-  if (phase === "lobby" && otpStep && !player) {
-    return (
-      <div style={{ ...S.bgScreen, backgroundImage: "url(/can1.jpg)" }}>
-        <div style={S.overlay} />
-        <div style={S.centerContent}>
-          <div style={S.glassCard}>
-            <div style={{ fontSize: 56, textAlign: "center", marginBottom: 8 }}>📱</div>
-            <div style={{ ...S.cardHeading, textAlign: "center", fontSize: 28 }}>CHECK YOUR PHONE</div>
-            <p style={{ color: "#aaa", fontSize: 18, textAlign: "center", margin: "8px 0 20px", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
-              Code sent to <strong style={{ color: "#F59E0B" }}>{formDataRef.current?.phone}</strong>
-            </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="000000"
-              value={otpCode}
-              onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              maxLength={6}
-              style={{
-                ...S.input,
-                textAlign: "center",
-                fontSize: 32,
-                fontWeight: 900,
-                letterSpacing: 12,
-                fontFamily: "monospace",
-                padding: "16px",
-              }}
-              autoFocus
-            />
-            {otpError && <div style={S.errorText}>{otpError}</div>}
-            <button
-              onClick={handleVerifyOtp}
-              disabled={verifying}
-              style={{ ...S.goldBtn, marginTop: 16, opacity: verifying ? 0.5 : 1 }}
-            >
-              {verifying ? "VERIFYING…" : "✅ VERIFY"}
-            </button>
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              {resendTimer > 0 ? (
-                <span style={{ color: "#555", fontSize: 12 }}>Resend in {resendTimer}s</span>
-              ) : (
-                <button onClick={handleResend} style={S.linkBtn}>Resend code</button>
-              )}
-            </div>
-            {showSkip && (
-              <div style={{ textAlign: "center", marginTop: 20, borderTop: "1px solid #333", paddingTop: 16 }}>
-                <button onClick={() => finishRegistration(false)} style={S.skipBtn}>
-                  SKIP VERIFICATION →
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        <div style={S.footerAbsolute}>Powered by TetriXX</div>
-        <div id="recaptcha-container" />
       </div>
     );
   }
@@ -514,73 +316,27 @@ export default function PlayerScreen() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input
                 type="text"
-                placeholder="Full Name"
+                placeholder="Nickname"
                 value={name}
                 onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleJoin()}
                 style={S.input}
-                autoComplete="name"
-                maxLength={40}
+                autoComplete="off"
+                maxLength={16}
+                autoFocus
               />
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                style={S.input}
-                autoComplete="email"
-                maxLength={80}
-              />
-              {/* Phone with country code — SMS mode only */}
-              {AUTH_MODE === "sms" && (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <select
-                    value={countryCode}
-                    onChange={e => setCountryCode(e.target.value)}
-                    style={{
-                      ...S.input,
-                      width: 110,
-                      flexShrink: 0,
-                      padding: "14px 8px",
-                      fontSize: 14,
-                      appearance: "none",
-                      WebkitAppearance: "none",
-                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 8px center",
-                      paddingRight: 24,
-                    }}
-                  >
-                    {COUNTRY_CODES.map(cc => (
-                      <option key={cc.code} value={cc.code}>{cc.label}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="tel"
-                    placeholder="12 345 6789"
-                    value={phoneNum}
-                    onChange={e => setPhoneNum(e.target.value)}
-                    style={{ ...S.input, flex: 1 }}
-                    autoComplete="tel"
-                    maxLength={15}
-                    onKeyDown={e => e.key === "Enter" && handleJoin()}
-                  />
-                </div>
-              )}
               {error && <div style={S.errorText}>{error}</div>}
               <button
                 onClick={handleJoin}
                 disabled={submitting}
                 style={{ ...S.goldBtn, opacity: submitting ? 0.5 : 1 }}
               >
-                {submitting
-                  ? (AUTH_MODE === "sms" ? "SENDING CODE…" : "JOINING…")
-                  : "🎮 JOIN"}
+                {submitting ? "JOINING…" : "🎮 JOIN"}
               </button>
             </div>
           </div>
         </div>
         <div style={S.footerAbsolute}>Powered by TetriXX</div>
-        {AUTH_MODE === "sms" && <div id="recaptcha-container" />}
       </div>
     );
   }
@@ -1136,24 +892,6 @@ const S = {
     letterSpacing: 2,
     boxShadow: "0 0 20px #F59E0B33",
     width: "100%",
-  },
-  linkBtn: {
-    background: "none",
-    border: "none",
-    color: "#F59E0B",
-    fontSize: 13,
-    cursor: "pointer",
-    textDecoration: "underline",
-    fontFamily: "monospace",
-  },
-  skipBtn: {
-    background: "none",
-    border: "none",
-    color: "#555",
-    fontSize: 12,
-    cursor: "pointer",
-    fontFamily: "monospace",
-    letterSpacing: 1,
   },
   errorText: {
     color: "#EF4444",

@@ -27,7 +27,7 @@ This is the master clock. Every UI decision must respect these constraints.
 
 **LOBBY (5 min):**
 - QR code must be giant and instant — no loading
-- Registration must be under 60 seconds per player (name + email + phone + OTP)
+- Registration must be under 15 seconds per player (nickname only)
 - Admin shows live join counter — presenter narrates while people register
 - Presenter can START as soon as enough players are in — doesn't need 100%
 
@@ -70,12 +70,11 @@ Players not yet directed to the URL.
 - Scrolling feed of player names joining
 - Game rules summary (3 bullet points max — visible while people register)
 
-**Player phone flow — must complete in under 60 seconds:**
+**Player phone flow — must complete in under 15 seconds:**
 1. Scan QR → land on /play
-2. Enter Name + Email + Phone number (single form, one screen)
-3. Tap SEND CODE → receive SMS from Firebase Auth
-4. Enter 6-digit OTP
-5. "Welcome [Name]! You're in. Watch the big screen."
+2. Type a nickname (single autofocused field) — nothing else is asked for
+3. Tap JOIN (or hit Enter)
+4. "[Nickname]! You're in. Watch the big screen."
 
 **Admin controls:**
 - See live count
@@ -207,7 +206,7 @@ The bullwhip chart appears inline at the end of round1 for ~5 seconds before aut
 
 ## Player phone states
 ```
-register → otp → waiting → playing → watching
+register → waiting → playing → watching
 ```
 - `playing`: ONLY during round1 — shows order buttons + auto-lock timer
 - `watching`: all other phases — shows phase content + Durry
@@ -259,7 +258,7 @@ TetriXX: *"Automating complexity, delivering clarity for a sustainable future."*
 | Frontend | React + Vite |
 | Realtime | Firebase Realtime Database (Singapore) |
 | Hosting | Firebase Hosting → your-project-id.web.app |
-| Auth | Firebase Auth SMS OTP |
+| Auth | None — nickname only, no sign-in |
 | Deploy | GitHub Actions on push to main |
 
 ## Project structure
@@ -267,9 +266,9 @@ TetriXX: *"Automating complexity, delivering clarity for a sustainable future."*
 src/
   App.jsx              — router: /admin → AdminScreen, /play → PlayerScreen
   DurianRush.jsx       — single-player demo (all 3 rounds, no Firebase)
-  firebase.js          — Firebase init, exports db + auth
+  firebase.js          — Firebase init, exports db
   AdminScreen.jsx      — big screen, 8 phases, presenter controls
-  PlayerScreen.jsx     — mobile: register / OTP / waiting / playing / watching
+  PlayerScreen.jsx     — mobile: register / waiting / playing / watching
   GameEngine.js        — pure functions: stepGame, aiOrder, costs (no React)
   components/
     DurryIntro.jsx     — boss reveal cinematic (15s max)
@@ -292,7 +291,8 @@ src/
   weekTimer: 20          ← seconds per week (admin configurable)
 
 /players/{uid}/
-  name, email, phone, verified
+  name                   ← nickname
+  emoji                  ← randomly assigned
   run1: { orders:[], costs:[], total }
   bestCost: number
   joinedAt: timestamp
@@ -331,13 +331,12 @@ order = Math.round(received * (1.4 + tierIdx * 0.2) + Math.max(0, 14 - inv) * 1.
 ## Build order
 1. [ ] GameEngine.js — pure logic, no React
 2. [ ] AdminScreen.jsx — 8 phases, Firebase writes, timing controls
-3. [ ] PlayerScreen.jsx — register/OTP/play/watch
+3. [ ] PlayerScreen.jsx — register/play/watch
 4. [ ] App.jsx — React Router /admin /play
 5. [ ] Firebase realtime wiring — onValue + set()
-6. [ ] Firebase Auth SMS OTP
-7. [ ] Security rules
-8. [ ] Durry assets in /public
-9. [ ] End-to-end rehearsal with real phones
+6. [ ] Security rules
+7. [ ] Durry assets in /public
+8. [ ] End-to-end rehearsal with real phones
 
 ## URLs
 - Live: https://your-project-id.web.app
